@@ -1,0 +1,10 @@
+Jinja2
+pillow
+ExifRead
+feedgen
+pytz
+wand
+progress
+markdown2
+python-frontmatter
+python-slugify
