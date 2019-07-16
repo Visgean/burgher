@@ -7,7 +7,8 @@ from datetime import datetime
 import exifread
 import pytz
 
-from .burgher import Node, TemplateNode
+from .node import Node
+from .template_nodes import TemplateNode
 from pathlib import Path
 from wand.image import Image as WandImage
 from PIL import Image as PILImage
