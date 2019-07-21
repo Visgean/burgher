@@ -1,6 +1,7 @@
 import os
 import shutil
 from pathlib import Path
+from urllib.parse import quote
 
 from slugify import slugify
 from progress.bar import Bar
@@ -15,6 +16,7 @@ class Node:
     children = None
     show_progress = False
     indexable = True
+    rewrite_html_links = True  # /page.html -> /page
 
     def __init__(self, parent=None, **config):
         self.children = {}
@@ -34,7 +36,14 @@ class Node:
 
     def get_link(self):
         relative_dir = self.get_output_path().relative_to(self.get_absolute_output())
-        return f"{self.get_base_link_url()}{relative_dir}"
+        if relative_dir.name == 'index.html':
+            relative_dir = relative_dir.parent
+
+        link = quote(f"{self.get_base_link_url()}{relative_dir}")
+
+        if self.rewrite_html_links and link.endswith(".html"):
+            return link[:-5]
+        return link
 
     def get_absolute_link(self):
         return self.get_config('domain', '') + self.get_link()

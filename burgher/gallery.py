@@ -2,7 +2,7 @@ import os
 from collections import defaultdict
 
 import markdown2
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import exifread
 import pytz
@@ -26,7 +26,7 @@ EXIF_INTERESTING_TAGS = {
     'EXIF LensModel': 'lens',
 }
 DEFAULT_DATE = datetime(1970, 1, 1)
-THUMB_SIZES = ('x400', '1920x')
+THUMB_SIZES = ('x10', 'x400', '1200x', '1920x', '3000x', '4000x')
 
 
 def parse_exif_date(dt) -> datetime:
@@ -45,10 +45,21 @@ def is_pic(filename):
 
 class Thumb(Node):
     indexable = False
+    size_x = None
+    size_y = None
 
     def __init__(self, size, **kwargs):
         super().__init__(**kwargs)
         self.size = size
+
+    def set_real_size(self):
+        im = PILImage.open(self.get_output_path())
+        self.size_y, self.size_x = im.size
+
+    def get_width(self):
+        if not self.size_x:
+            self.set_real_size()
+        return self.size_x
 
     def get_output_folder(self):
         return self.parent.get_output_folder() / self.size
@@ -93,7 +104,17 @@ class Picture(Node):
             self.size_x, self.size_y = im.size
 
     def grow(self):
-        self.children = {size: Thumb(size=size, parent=self) for size in self.thumb_sizes}
+        for size in self.thumb_sizes:
+            size_x, size_y = size.split('x')
+            x = int(size_x) if size_x != '' else None
+            y = int(size_y) if size_y != '' else None
+
+            if (x and x > self.size_x) or (y and y > self.size_y):
+                continue
+
+            self.children[size] = Thumb(size=size, parent=self)
+
+        super().grow()
 
     # noinspection PyTypeChecker
     def __str__(self):
@@ -114,11 +135,15 @@ class Picture(Node):
 
     @property
     def smallest_thumb(self):
-        return self.children[self.thumb_sizes[0]]
+        for size in self.thumb_sizes:
+            if size in self.children:
+                return self.children[size]
 
     @property
     def largest_thumb(self):
-        return self.children[self.thumb_sizes[-1]]
+        for size in reversed(self.thumb_sizes):
+            if size in self.children:
+                return self.children[size]
 
     @property
     def ratio(self) -> float:
@@ -143,6 +168,11 @@ class Picture(Node):
         if 'Image DateTime' in self.tags:
             return parse_exif_date(self.tags['Image DateTime'])
         return DEFAULT_DATE
+
+    def get_srcset(self):
+        return ",".join([
+            f'{t.get_link()} {t.get_width()}w' for t in self.children.values()
+        ])
 
 
 class Album(TemplateNode):
@@ -186,7 +216,12 @@ class Album(TemplateNode):
             return DEFAULT_DATE
 
     def get_pictures_sorted(self):
-        return sorted(self.children.values(), key=Picture.get_date, reverse=False)
+        ascending = list(sorted(self.children.values(), key=Picture.get_date, reverse=False))
+        difference: timedelta = ascending[-1].get_date() - ascending[0].get_date()
+
+        if difference.days > 10:
+            return reversed(ascending)
+        return ascending
 
     def grow(self):
         # find all picture extensions
@@ -202,6 +237,10 @@ class Album(TemplateNode):
         fe.id(self.get_absolute_link())
         fe.title(self.name)
         fe.link(href=self.get_absolute_link())
+        fe.content(f"""
+        <h1>{self.name}</h1>
+        <img src="{self.best_photo.get_absolute_link()}"/>
+        """)
 
         dt = datetime.combine(self.get_latest_date(), datetime.min.time())
         dt_aware = pytz.utc.localize(dt)
@@ -226,7 +265,8 @@ class Gallery(TemplateNode):
 
         albums_per_year = defaultdict(list)
         for album in albums_sorted:
-            albums_per_year[album.get_latest_date().year].append(album)
+            date = album.get_latest_date().strftime("%B, %Y")
+            albums_per_year[date].append(album)
 
         c['albums_sorted'] = albums_sorted
         c['albums_per_year'] = albums_per_year
