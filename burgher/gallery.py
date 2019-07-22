@@ -159,8 +159,6 @@ class Picture(Node):
         with WandImage(filename=self.path) as img:
             [thumb.generate_with_wand(img) for thumb in self.children.values() if not thumb.exists()]
 
-    # noinspection PyTypeChecker
-    # noinspection PyBroadException
     def get_date(self):
         if 'Image DateTimeOriginal' in self.tags:
             return parse_exif_date(self.tags['Image DateTimeOriginal'])
