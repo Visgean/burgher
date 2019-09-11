@@ -134,7 +134,5 @@ class App(Node):
     def generate(self):
         super().generate()
 
-        if self.feed:
+        if self.feed is not None:
             self.process_feed(self.feed)
-            self.feed.atom_file(str(self.output_folder / 'atom.xml'))
-            self.feed.rss_file(str(self.output_folder / 'rss.xml'))

@@ -28,3 +28,23 @@ class StaticFolderNode(Node):
             shutil.rmtree(out)
         shutil.copytree(self.folder, self.get_output_folder())
         super().generate()
+
+
+class StaticNode(Node):
+    """
+    This just copies files from one place to another without attempting to access them in any way
+    """
+
+    def __init__(self, file, **config):
+        super().__init__(**config)
+        self.file = Path(file).resolve()
+
+    def get_name(self):
+        return self.file.name
+
+    def generate(self):
+        """
+        TODO: deal with shutil so that we don't have to delete the directory
+        """
+        shutil.copy(self.file, self.get_output_folder())
+        super().generate()

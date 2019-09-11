@@ -1,11 +1,13 @@
 import os
 from collections import defaultdict
+from multiprocessing.pool import Pool
 
 import markdown2
 from datetime import datetime, timedelta
 
 import exifread
 import pytz
+import email.utils
 
 from .node import Node
 from .template_nodes import TemplateNode
@@ -86,6 +88,8 @@ class Picture(Node):
     size_x = None
     size_y = None
 
+    date = None
+
     def __init__(self, path, thumb_sizes=THUMB_SIZES, **kwargs):
         super().__init__(**kwargs)
         self.path = path
@@ -160,12 +164,17 @@ class Picture(Node):
             [thumb.generate_with_wand(img) for thumb in self.children.values() if not thumb.exists()]
 
     def get_date(self):
-        if 'Image DateTimeOriginal' in self.tags:
-            return parse_exif_date(self.tags['Image DateTimeOriginal'])
+        if self.date:
+            return self.date
 
-        if 'Image DateTime' in self.tags:
-            return parse_exif_date(self.tags['Image DateTime'])
-        return DEFAULT_DATE
+        if 'Image DateTimeOriginal' in self.tags:
+            self.date = parse_exif_date(self.tags['Image DateTimeOriginal'])
+        elif 'Image DateTime' in self.tags:
+            self.date = parse_exif_date(self.tags['Image DateTime'])
+        else:
+            self.date = DEFAULT_DATE
+
+        return self.date
 
     def get_srcset(self):
         return ",".join([
@@ -177,8 +186,9 @@ class Album(TemplateNode):
     name: str
     path: Path
     description = None
-    show_progress = True
     template_node_name = 'album'
+    show_progress = True
+    indexable = True
 
     def __init__(self, name, path, description=None, thumb_sizes=THUMB_SIZES, **kwargs):
         super().__init__(template_name="album.html", **kwargs)
@@ -186,6 +196,9 @@ class Album(TemplateNode):
         self.path = path
         self.description = description
         self.thumb_sizes = thumb_sizes
+        self.thumb_galleries = []
+        self.pictures = {}
+        self.sub_albums = {}
 
     def get_output_folder(self):
         return super().get_output_folder() / self.get_output_name()
@@ -201,49 +214,80 @@ class Album(TemplateNode):
 
     @property
     def best_photo(self) -> Picture:
-        if 'main' in self.children:
-            return self.children['main']
+        if not self.pictures:
+            return list(self.sub_albums.values())[0].best_photo
+
+        if 'main' in self.pictures:
+            return self.pictures['main']
 
         good_ratio = 16 / 9
-        return sorted(self.children.values(), key=lambda p: good_ratio - p.ratio)[0]
+        return sorted(self.pictures.values(), key=lambda p: good_ratio - p.ratio)[0]
 
     def get_latest_date(self):
-        try:
-            return max(filter(None, map(Picture.get_date, self.children.values())))
-        except ValueError:
-            return DEFAULT_DATE
+        picture_dates = list(filter(None, map(Picture.get_date, self.pictures.values())))
+        sub_album_dates = list(filter(None, map(Album.get_latest_date, self.sub_albums.values())))
+
+        if picture_dates and sub_album_dates:
+            return max(max(picture_dates), max(sub_album_dates))
+
+        if picture_dates:
+            return max(picture_dates)
+        if sub_album_dates:
+            return max(sub_album_dates)
+        return DEFAULT_DATE
 
     def get_pictures_sorted(self):
-        ascending = list(sorted(self.children.values(), key=Picture.get_date, reverse=False))
+        if not self.pictures:
+            return []
+
+        ascending = list(sorted(self.pictures.values(), key=Picture.get_date, reverse=False))
         difference: timedelta = ascending[-1].get_date() - ascending[0].get_date()
 
         if difference.days > 10:
             return reversed(ascending)
         return ascending
 
+    def get_sub_albums_sorted(self):
+        if not self.sub_albums:
+            return []
+
+        return list(sorted(self.sub_albums.values(), key=Album.get_latest_date, reverse=True))
+
     def grow(self):
         # find all picture extensions
-        self.children.update({
+        self.pictures.update({
             get_name(p.name): Picture(path=Path(p.path), parent=self)
             for p in os.scandir(self.path)
             if is_pic(p.path)
         })
+
+        for gal in [f for f in os.scandir(self.path) if f.is_dir()]:
+            album = Album(name=gal.name, path=gal.path, parent=self)
+            info_file = Path(gal) / 'info.md'
+            if info_file.exists():
+                album.description = markdown2.markdown_path(info_file)
+            self.sub_albums[gal.name] = album
+
+        self.children.update(self.pictures)
+        self.children.update(self.sub_albums)
         super().grow()
 
-    def process_feed(self, feed):
-        fe = feed.add_entry()
-        fe.id(self.get_absolute_link())
-        fe.title(self.name)
-        fe.link(href=self.get_absolute_link())
-        fe.content(f"""
-        <h1>{self.name}</h1>
-        <img src="{self.best_photo.get_absolute_link()}"/>
-        """)
+    def process_feed(self, feed: list):
+        latest_date = self.get_latest_date()
 
-        dt = datetime.combine(self.get_latest_date(), datetime.min.time())
-        dt_aware = pytz.utc.localize(dt)
+        if datetime.now() - latest_date > timedelta(days=30):
+            return
 
-        fe.updated(dt_aware)
+
+        feed.append({
+            'title': self.name,
+            'link': self.get_absolute_link(),
+            'date': email.utils.format_datetime(latest_date),
+            'description': f'New album - {self.name}',
+            'image': self.best_photo.largest_thumb.get_absolute_link(),
+        })
+
+        super().process_feed(feed)
 
 
 class Gallery(TemplateNode):
@@ -271,8 +315,7 @@ class Gallery(TemplateNode):
         return c
 
     def grow(self):
-        folders = [f for f in os.scandir(self.photo_dir) if f.is_dir()]
-        for gal in folders:
+        for gal in [f for f in os.scandir(self.photo_dir) if f.is_dir()]:
             album = Album(name=gal.name, path=gal.path, parent=self)
             info_file = Path(gal) / 'info.md'
             if info_file.exists():
