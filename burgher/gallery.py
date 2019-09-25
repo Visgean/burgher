@@ -310,6 +310,7 @@ class Gallery(TemplateNode):
             date = album.get_latest_date().strftime("%B, %Y")
             albums_per_year[date].append(album)
 
+        c['today'] = datetime.today()
         c['albums_sorted'] = albums_sorted
         c['albums_per_year'] = albums_per_year
         return c
