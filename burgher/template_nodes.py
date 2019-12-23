@@ -51,7 +51,7 @@ class FileTemplateNode(TemplateNode):
     # noinspection PyArgumentList
     @classmethod
     def from_folder(klass, path, **kwargs):
-        return [klass(f, **kwargs) for f in Path(path).iterdir()]
+        return [klass(f, **kwargs) for f in Path(path).iterdir() if not f.name.startswith('_')]
 
     def get_name(self):
         name, ext = splitext(self.source_file.name)
@@ -71,11 +71,24 @@ class MarkdownNode(FileTemplateNode):
 class FrontMatterNode(FileTemplateNode):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.post = frontmatter.load(self.source_file)
-        self.content = markdown2.markdown(self.post.content)
+        self.metadata = frontmatter.load(self.source_file)
+        self.markdown_content = self.metadata.content
+        self.html_content = markdown2.markdown(self.markdown_content)
 
     def get_extra_context(self):
         c = super().get_extra_context()
-        c['post'] = self.post
-        c['content'] = self.content
+        c['metadata'] = self.metadata
+        c['html_content'] = self.html_content
         return c
+
+
+
+
+
+
+
+
+
+
+
+
