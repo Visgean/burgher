@@ -1,0 +1,143 @@
+/*
+
+All grid code is placed in a 'supports' rule (feature query) at the bottom of the CSS (Line 77). 
+        
+The 'supports' rule will only run if your browser supports CSS grid.
+
+Flexbox is used as a fallback so that browsers which don't support grid will still recieve an identical layout.
+
+*/
+@import url(https://fonts.googleapis.com/css?family=Montserrat:500);
+
+:root {
+    /* Base font size */
+    font-size: 10px;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    min-height: 100vh;
+    background-color: #fafafa;
+}
+
+.container {
+    max-width: 90%;
+    margin: 0 auto;
+    padding: 0 2rem 2rem;
+}
+
+
+
+
+
+.gallery {
+    display: flex;
+    flex-wrap: wrap;
+    /* Compensate for excess margin on outer gallery flex items */
+    margin: -1rem -1rem;
+}
+
+
+@media (max-width: 767px) {
+    .container {
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+    .gallery-text {
+        margin: 10px;
+    }
+
+}
+
+.gallery:last-of-type {
+    padding-bottom: 100px;
+}
+
+
+.gallery-item {
+    /* Minimum width of 24rem and grow to fit available space */
+    flex: 1 0 24rem;
+    /* Margin value should be half of grid-gap value as margins on flex items don't collapse */
+    margin: 1rem;
+    /*box-shadow: 0.3rem 0.4rem 0.4rem rgba(0, 0, 0, 0.4);*/
+    overflow: hidden;
+
+    max-width: 90vw;
+
+    /* we have very small thumbnails */
+    /*max-height: 800px;*/
+}
+
+.gallery-image {
+    padding-bottom: 30px;
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-width: 100vw;
+
+    object-fit: contain;
+    transition: transform 400ms ease-out;
+}
+
+.gallery-moving:hover {
+    transform: scale(0.85);
+}
+
+.gallery-title {
+    display: block;
+    object-fit: cover;
+    line-height: 24px;
+    position: relative;
+    top: 50%;
+    left: 50%;
+    text-align: center;
+    vertical-align: middle;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 20px;
+    font-weight: bolder;
+    text-transform: uppercase;
+    z-index: 1000;
+}
+
+.gallery-title:visited {
+    color: white;
+}
+
+.gallery-title:hover {
+    color: white;
+    text-decoration: none;
+}
+.gallery a {
+    max-width: 90vw;
+
+}
+
+
+@supports (display: grid) {
+    .gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(90rem, 1fr));
+        grid-gap: 1rem;
+    }
+
+    .gallery,
+    .gallery-item {
+        margin: 0;
+        max-width: 90vw;
+    }
+}
+
+
+.landing-gallery {
+    padding-left: 5%;
+    padding-right: 5%;
+}
+
+

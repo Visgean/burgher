@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="alternate" type="application/rss+xml" title="tintinburgh" href="/rss.xml">
+
+  <title>
+	  {% block title %}{{ SITE_NAME }}{% endblock %} | {{ SITE_NAME }}
+  </title>
+
+  <script
+      src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+      crossorigin="anonymous"></script>
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-145070219-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'UA-145070219-1');
+    </script>
+
+
+
+  {% block extrahead %}
+  {% endblock %}
+
+  {% block social %}
+    <meta property="og:title" content="Fakeland of Tintinburgh">
+    <meta property="og:image" content="/static/header/w3840.jpg">
+  {% endblock %}
+
+  <link rel="stylesheet" href="/static/gallery.css">
+  <link rel="stylesheet" href="/static/main.css">
+
+</head>
+
+<body>
+
+{% block navigation %}
+  <header class="site-header">
+    <div class="wrapper wrapper-padding">
+      <a class="site-title" rel="author" href="/#welcome">{% block header %}{{ SITE_NAME }}{% endblock %}</a>
+
+      <nav class="site-nav">
+        <a class="page-link" href="/about">About</a>
+      </nav>
+    </div>
+  </header>
+
+{% endblock %}
+
+<main class="{% block main_classes %}page-content-post{% endblock %}" aria-label="Content">
+  {% block content %}
+
+  {% endblock %}
+</main>
+
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery.lazy/1.7.9/jquery.lazy.min.js"/>
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery.lazy/1.7.9/jquery.lazy.plugins.min.js"/>
+<script type="text/javascript">
+    $(function () {
+        $('img').Lazy();
+    });
+</script>
+
+{% block extrajs %}
+
+{% endblock %}
+
+</body>
+
+</html>

@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block extrahead %}
+	<link rel="stylesheet" href="/static/gallery.css">
+{% endblock %}
+
+{% block navigation %}
+
+{% endblock %}
+
+{% block title %}
+	Hello
+{% endblock %}
+
+
+{% block main_classes %}page-content-main{% endblock %}
+
+{% block content %}
+
+	<div class="wrapper wrapper-padding">
+		<h1 id="welcome">Welcome to {{ SITE_NAME }}!</h1>
+
+
+		<h1 class="year">Latest</h1>
+
+			<div class="gallery">
+				{% for album in latest_sub_albums %}
+					<div class="gallery-item">
+						<a href="{{ album.get_link() }}" class="gallery-title">{{ album.name }}</a>
+						<a href="{{ album.get_link() }}">
+							<img class="gallery-image"
+							     src="{{ album.best_photo.smallest_thumb.get_link() }}"
+							     srcset="{{ album.best_photo.get_srcset() }}"
+							     sizes="
+						            (max-width: 1200px) 100vw,
+						            (max-width: 1850px) 50vw,
+						            (max-width: 4000px) 25vw,
+						            25vw"
+							     alt="{{ album.name }}"
+							     loading="lazy"
+							>
+						</a>
+					</div>
+				{% endfor %}
+			</div>
+
+
+		{% for year, albums_year in albums_per_year.items() %}
+				<h1 class="year">{{ year }}</h1>
+				<hr>
+
+			<div class="gallery">
+				{% for album in albums_year %}
+					<div class="gallery-item">
+						<a href="{{ album.get_link() }}" class="gallery-title">{{ album.name }}</a>
+						<a href="{{ album.get_link() }}">
+							<img class="gallery-image"
+							     src="{{ album.best_photo.smallest_thumb.get_link() }}"
+							     srcset="{{ album.best_photo.get_srcset() }}"
+							     sizes="
+						            (max-width: 1200px) 100vw,
+						            (max-width: 1850px) 50vw,
+						            (max-width: 4000px) 25vw,
+						            25vw"
+							     alt="{{ album.name }}"
+                   loading="lazy"
+              >
+						</a>
+					</div>
+				{% endfor %}
+			</div>
+		{% endfor %}
+	</div>
+{% endblock %}
+  

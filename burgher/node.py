@@ -6,13 +6,11 @@ from urllib.parse import quote
 from slugify import slugify
 from progress.bar import Bar
 
-DEFAULT_CONFIG = {
-    "template_dir": 'templates'
-}
+DEFAULT_CONFIG = {"template_dir": "templates"}
 
 
 class Node:
-    parent: 'Node' = None
+    parent: "Node" = None
     children = None
     show_progress = False
     indexable = True
@@ -32,11 +30,20 @@ class Node:
         return default
 
     def get_base_link_url(self):
+        if self.get_config("local_build"):
+            return ""
+        # domain = self.get_config('domain', '')
+        base_path = self.get_config("base_path", "")
+        if base_path:
+            return f"/{base_path}/"
         return "/"
 
     def get_link(self):
+        if self.get_config("local_build"):
+            return str(self.get_output_path())
+
         relative_dir = self.get_output_path().relative_to(self.get_absolute_output())
-        if relative_dir.name == 'index.html':
+        if relative_dir.name == "index.html":
             relative_dir = relative_dir.parent
 
         link = quote(f"{self.get_base_link_url()}{relative_dir}")
@@ -46,7 +53,7 @@ class Node:
         return link
 
     def get_absolute_link(self):
-        return self.get_config('domain', '') + self.get_link()
+        return self.get_config("domain", "") + self.get_link()
 
     def get_output_folder(self):
         return self.parent.get_output_folder()
@@ -72,6 +79,13 @@ class Node:
         else:
             for c in self.children.values():
                 c.generate()
+
+    def children_recursive(self) -> list:
+        r = []
+        for c in self.children.values():
+            r.append(c)
+            r.extend(c.children_recursive())
+        return r
 
     def exists(self):
         return self.get_output_path().exists()
@@ -103,7 +117,7 @@ class App(Node):
     and then it generates all leafs of the graph.
     """
 
-    def __init__(self, output_path="build", feed=None, **config):
+    def __init__(self, output_path="build", feed=None, local_build=None, **config):
         super().__init__()
         self.feed = feed
 
@@ -112,6 +126,8 @@ class App(Node):
 
         self.config = default_config
         self.output_folder = Path(output_path).resolve()
+
+        self.local_build = local_build
 
     def get_output_folder(self):
         return self.output_folder
@@ -136,3 +152,9 @@ class App(Node):
 
         if self.feed is not None:
             self.process_feed(self.feed)
+
+        if self.local_build:
+            self.output_folder = Path(self.local_build).resolve()
+            self.config["domain"] = ""
+            self.config["local_build"] = True
+            super().generate()

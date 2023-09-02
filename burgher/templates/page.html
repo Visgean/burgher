@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ metadata.title }}{% endblock %}
+
+{% block content %}
+	<div class="wrapper wrapper-post">
+	<h1>{{ metadata.title }}</h1>
+		{{ html_content|safe }}
+	</div>
+{% endblock %}
+
