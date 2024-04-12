@@ -11,9 +11,14 @@
         max-height: none;
         height: 100%;
     }
+
+    .img-container {
+        padding: 0;
+    }
 }
 
 
 .sub-albums {
     margin-bottom: 100px;
 }
+

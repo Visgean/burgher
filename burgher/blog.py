@@ -1,3 +1,5 @@
+import picture
+import utils
 from .template_nodes import TemplateNode, FrontMatterNode
 
 
@@ -17,7 +19,7 @@ class BlogRoot(TemplateNode):
 
         for post in posts_sorted:
             post.parent = self
-            self.children[post.get_name()] = post
+            self.children[utils.get_name()] = post
 
         super().grow()
 

@@ -6,6 +6,9 @@ from urllib.parse import quote
 from slugify import slugify
 from progress.bar import Bar
 
+import picture
+import utils
+
 DEFAULT_CONFIG = {"template_dir": "templates"}
 
 
@@ -141,7 +144,7 @@ class App(Node):
                 for node in node_pack:
                     node.parent = self
                     node.grow()
-                    self.children[f"{name}:{node.get_name()}"] = node
+                    self.children[f"{name}:{utils.get_name()}"] = node
             else:  # node pack is just one node
                 node_pack.parent = self
                 node_pack.grow()
