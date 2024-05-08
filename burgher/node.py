@@ -6,8 +6,7 @@ from urllib.parse import quote
 from slugify import slugify
 from progress.bar import Bar
 
-import picture
-import utils
+from . import utils
 
 DEFAULT_CONFIG = {"template_dir": "templates"}
 
