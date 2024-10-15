@@ -1,12 +1,10 @@
 import os
-import shutil
 from pathlib import Path
 from urllib.parse import quote
 
 from slugify import slugify
 from progress.bar import Bar
 
-from . import utils
 
 DEFAULT_CONFIG = {"template_dir": "templates"}
 
@@ -143,7 +141,7 @@ class App(Node):
                 for node in node_pack:
                     node.parent = self
                     node.grow()
-                    self.children[f"{name}:{utils.get_name()}"] = node
+                    self.children[f"{name}:{node.get_name()}"] = node
             else:  # node pack is just one node
                 node_pack.parent = self
                 node_pack.grow()
@@ -160,3 +158,43 @@ class App(Node):
             self.config["domain"] = ""
             self.config["local_build"] = True
             super().generate()
+
+    def photo_cleanup(self, dry=True):
+        """
+        Clean up files that are present from previous builds
+        """
+
+        # List of all images we generated:
+        files_generated = {
+            child.get_output_path() for child in self.children_recursive()
+        }
+
+        # Find all images
+        existing_imgs = set()
+        exts = ["*.jpg", "*.jpeg", "*.png", "*.JPG", "*.JPEG", "*.PNG"]
+        for img_ext in exts:
+            existing_imgs.update(set(self.output_folder.rglob(img_ext)))
+
+        print(
+            "Found",
+            len(existing_imgs),
+            "images",
+            "generated",
+            len(files_generated),
+            "files",
+        )
+
+        to_delete = existing_imgs - files_generated
+        to_delete_count = len(to_delete)
+        if to_delete_count > 100:
+            print(f'would delete {to_delete_count} files, this is probably mistake!')
+        else:
+            for file_to_delete in existing_imgs - files_generated:
+                if "/static/" in str(file_to_delete):
+                    continue
+
+                if dry:
+                    print(f"Would delete", file_to_delete)
+                else:
+                    print(f"Deleting", file_to_delete)
+                    file_to_delete.unlink()
