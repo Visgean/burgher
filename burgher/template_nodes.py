@@ -1,3 +1,4 @@
+from datetime import datetime
 from os.path import splitext
 from pathlib import Path
 
@@ -33,6 +34,7 @@ class TemplateNode(Node):
         return {
             self.template_node_name: self,
             "base_link": self.get_base_link_url(),
+            "now": datetime.now(),
         }
 
     def generate(self):
