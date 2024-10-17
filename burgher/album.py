@@ -163,7 +163,7 @@ class Album(TemplateNode):
                 "link": self.get_absolute_link(),
                 "date": email.utils.format_datetime(latest_date),
                 "description": f"New album - {self.name}",
-                "image": self.best_photo.largest_thumb.get_absolute_link(),
+                "image": self.best_photo().largest_thumb.get_absolute_link(),
             }
         )
 

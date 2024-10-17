@@ -23,8 +23,8 @@
             <a href="{{ sub_album.get_link() }}" class="gallery-title">{{ sub_album.name }}</a>
             <a href="{{ sub_album.get_link() }}" class="d-block mb-4 h-100" title="{{ sub_album.name }}">
               <img class="img-fluid img-thumbnail"
-                   src="{{ sub_album.best_photo.smallest_thumb.get_link() }}"
-                   srcset="{{ sub_album.best_photo.get_srcset() }}"
+                   src="{{ sub_album.best_photo().smallest_thumb.get_link() }}"
+                   srcset="{{ sub_album.best_photo().get_srcset() }}"
 
                    sizes="
 							            (max-width: 1200px) 100vw,

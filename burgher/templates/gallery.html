@@ -29,8 +29,8 @@
 						<a href="{{ album.get_link() }}" class="gallery-title">{{ album.name }}</a>
 						<a href="{{ album.get_link() }}">
 							<img class="gallery-image"
-							     src="{{ album.best_photo.smallest_thumb.get_link() }}"
-							     srcset="{{ album.best_photo.get_srcset() }}"
+							     src="{{ album.best_photo().smallest_thumb.get_link() }}"
+							     srcset="{{ album.best_photo().get_srcset() }}"
 							     sizes="
 						            (max-width: 1200px) 100vw,
 						            (max-width: 1850px) 50vw,
@@ -55,8 +55,8 @@
 						<a href="{{ album.get_link() }}" class="gallery-title">{{ album.name }}</a>
 						<a href="{{ album.get_link() }}">
 							<img class="gallery-image"
-							     src="{{ album.best_photo.smallest_thumb.get_link() }}"
-							     srcset="{{ album.best_photo.get_srcset() }}"
+							     src="{{ album.best_photo().smallest_thumb.get_link() }}"
+							     srcset="{{ album.best_photo().get_srcset() }}"
 							     sizes="
 						            (max-width: 1200px) 100vw,
 						            (max-width: 1850px) 50vw,
