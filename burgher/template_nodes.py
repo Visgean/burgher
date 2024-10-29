@@ -32,6 +32,7 @@ class TemplateNode(Node):
 
     def get_extra_context(self) -> dict:
         return {
+            # "node": self,
             self.template_node_name: self,
             "base_link": self.get_base_link_url(),
             "now": datetime.now(),

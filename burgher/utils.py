@@ -5,6 +5,20 @@ from fractions import Fraction
 from .defaults import PICTURE_EXTENSIONS
 
 
+def user_prompt(question: str) -> bool:
+    """ Prompt the yes/no-*question* to the user. """
+    answers = {
+        'yes': True,
+        'no': False
+    }
+    for _ in range(10):
+        user_input = input(question + " [yes/no]: ")
+        if user_input in answers:
+            return answers[user_input]
+        else:
+            print("Please use y/n or yes/no.\n")
+    return False
+
 def parse_exif_date(dt) -> datetime:
     return datetime.strptime(str(dt.values), "%Y:%m:%d %H:%M:%S")
 

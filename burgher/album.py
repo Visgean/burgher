@@ -62,12 +62,32 @@ class Album(TemplateNode):
             return f"{self.parent.get_name()} / {self.get_name()}"
         return self.name
 
-    @property
     def best_photo(self) -> Picture:
+        good_ratio = 16 / 9
+        candidates = []
+
         if not self.pictures and self.sub_albums:
-            return list(self.sub_albums.values())[0].best_photo
+            candidates.extend(
+                [
+                    a.best_photo()
+                    for a in self.sub_albums.values()
+                ]
+            )
         if not self.pictures and self.embedded:
-            return list(self.embedded.values())[0].best_photo
+            candidates.extend(
+                [
+                    a.best_photo()
+                    for a in self.embedded.values()
+                ]
+            )
+
+        if candidates:
+            for c in candidates:
+                if c.get_name() == 'main':
+                    return c
+
+            by_ratio = sorted(candidates, key=lambda p: good_ratio - p.ratio)
+            return by_ratio[0]
 
         if "main" in self.pictures:
             return self.pictures["main"]
@@ -121,14 +141,14 @@ class Album(TemplateNode):
         # find all picture extensions
         self.pictures.update(
             {
-                get_name(p.name): Picture(path=Path(p.path), parent=self)
+                get_name(p.name): Picture(path=Path(p.path), parent=self, app=self.app)
                 for p in os.scandir(self.path)
                 if is_pic(p.path)
             }
         )
 
         for gal in [f for f in os.scandir(self.path) if f.is_dir()]:
-            album = Album(name=gal.name, path=gal.path, parent=self)
+            album = Album(name=gal.name, path=gal.path, parent=self, app=self.app)
             info_file = Path(gal) / "info.md"
             if info_file.exists():
                 album.description = markdown2.markdown_path(info_file)

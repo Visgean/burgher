@@ -1,7 +1,10 @@
 from pathlib import Path
-
+from typing import Optional
+from datetime import datetime
 import exifread
 from PIL import Image as PILImage, ImageOps
+import os
+import hashlib
 
 from burgher import Node
 from .defaults import DEFAULT_DATE, THUMB_SIZES, EXIF_INTERESTING_TAGS
@@ -44,11 +47,8 @@ class Picture(Node):
     path: Path
     indexable = False
 
-    tags = None
     interesting_tags = {}
     tags_parsed = {}
-    size_x = None
-    size_y = None
 
     date = None
 
@@ -56,25 +56,11 @@ class Picture(Node):
         super().__init__(**kwargs)
 
         self.interesting_tags = {}
-        self.tags_parsed = {}
 
         self.path = path
         self.thumb_sizes = thumb_sizes
 
-        # noinspection PyTypeChecker
-        with open(self.path, "rb") as f:
-            self.tags = exifread.process_file(f, details=False)
-            self.parse_interesting_tags()
-            orientation = self.tags.get("Image Orientation")
-
-        im = PILImage.open(self.path)
-        # handle rotated images:
-        if orientation and (6 in orientation.values or 8 in orientation.values):
-            self.size_y, self.size_x = im.size
-        else:
-            self.size_x, self.size_y = im.size
-
-        im.close()
+        self.rebuild()
 
     def grow(self):
         for size in self.thumb_sizes:
@@ -103,32 +89,37 @@ class Picture(Node):
             return ", ".join(parts)
         return ""
 
+    def get_date(self):
+        return self.date
+
     def get_model(self):
-        return self.tags_parsed.get('model')
+        return self.context.get('model')
 
     def get_lens(self):
-        return self.tags_parsed.get('lens')
+        return self.context.get('lens')
 
     def get_iso(self):
-        iso_raw = self.tags_parsed.get('iso')
+        iso_raw = self.context.get('iso')
         return f'ISO: {iso_raw}'
 
     def get_aperture(self):
-        f = self.tags_parsed.get('aperture')
+        f = self.context.get('aperture')
         if f:
             return f'f{f}'  # hahaha
 
     def get_focal_length(self):
-        f = self.tags_parsed.get('length')
+        f = self.context.get('length')
         if f:
             return f'{f}mm'
 
     def get_shutter(self):
-        ss = self.tags_parsed.get('shutter')
+        ss = self.context.get('shutter')
         if ss:
             return f'{ss}s'
 
     def get_output_name(self):
+        if self.get_name() == 'main':
+            return self.get_hash() + '.jpg'
         return self.path.name
 
     def get_name(self):
@@ -149,63 +140,110 @@ class Picture(Node):
 
     @property
     def ratio(self) -> float:
-        return self.size_x / self.size_y
+        return self.context['size_x'] / self.context['size_y']
 
     # noinspection PyTypeChecker
     def generate(self):
         super().generate()
         # Imagemagick is slow as fuck so I try to avoid it.
-        if all(
-                [c.exists() for c in self.children.values()]
-        ):  # or not self.full_image_path.exists():
+        thumbs_exists = all(
+            [c.exists() for c in self.children.values()]
+        )
+
+        if not self.refreshed and thumbs_exists:
             return
 
-        [
+        for thumb in self.children.values():
             thumb.generate_pillow(self.path)
-            for thumb in self.children.values()
-            if not thumb.exists()
-        ]
 
-        # with WandImage(filename=self.path) as img:
-        #     [thumb.generate_with_wand(img) for thumb in self.children.values() if not thumb.exists()]
+    def build_context(self):
+        # noinspection PyTypeChecker
+        with open(self.path, "rb") as f:
+            tags = exifread.process_file(f, details=False)
+            orientation = tags.get("Image Orientation")
 
-    def get_date(self):
-        if self.date:
-            return self.date
-
-        if "Image DateTimeOriginal" in self.tags:
-            self.date = parse_exif_date(self.tags["Image DateTimeOriginal"])
-        elif "Image DateTime" in self.tags:
-            self.date = parse_exif_date(self.tags["Image DateTime"])
-        elif "EXIF DateTimeOriginal" in self.tags:
-            self.date = parse_exif_date(self.tags["EXIF DateTimeOriginal"])
+        interesting_tags, tags_parsed = self.parse_interesting_tags(tags)
+        im = PILImage.open(self.path)
+        # handle rotated images:
+        if orientation and (6 in orientation.values or 8 in orientation.values):
+            size_y, size_x = im.size
         else:
-            self.date = DEFAULT_DATE
+            size_x, size_y = im.size
 
-        return self.date
+        im.close()
+
+        if "Image DateTimeOriginal" in tags:
+            date = parse_exif_date(tags["Image DateTimeOriginal"])
+        elif "Image DateTime" in tags:
+            date = parse_exif_date(tags["Image DateTime"])
+        elif "EXIF DateTimeOriginal" in tags:
+            date = parse_exif_date(tags["EXIF DateTimeOriginal"])
+        else:
+            date = DEFAULT_DATE
+
+        self.date = date
+
+        model = tags_parsed.get('model')
+        lens = tags_parsed.get('lens')
+        iso = tags_parsed.get('iso')
+        aperture = tags_parsed.get('aperture')
+        length = tags_parsed.get('length')
+        shutter = tags_parsed.get('shutter')
+
+        return {
+            'date': date.isoformat(),
+            'iso': iso,
+            'aperture': aperture,
+            'length': length,
+            'shutter': shutter,
+            'model': model,
+            'lens': lens,
+            'size_y': size_y,
+            'size_x': size_x,
+        }
 
     def get_srcset(self):
         return ",".join(
             [f"{t.get_link()} {t.get_width()}w" for t in self.children.values()]
         )
 
-    def parse_interesting_tags(self):
+    def parse_interesting_tags(self, tags):
+        interesting_tags = {}
+        parsed = {}
         for tag, name in EXIF_INTERESTING_TAGS.items():
-            if tag in self.tags:
-                value = self.tags[tag]
-                self.interesting_tags[name] = value.printable
-                self.tags_parsed[name] = get_exif_tag_value(value)
+            if tag in tags:
+                value = tags[tag]
+                interesting_tags[name] = value.printable
+                parsed[name] = get_exif_tag_value(value)
+        return interesting_tags, parsed
 
     def get_json(self):
-        return {
-            "name": self.get_name(),
-            "tags": self.interesting_tags,
-            "tags_parsed": self.tags_parsed,
-            "size_x": self.size_x,
-            "size_y": self.size_y,
-            "date": self.date.isoformat(),
-            "srcset": self.get_srcset(),
-            "ratio": self.ratio,
-            "smallest_thumb": self.smallest_thumb.get_link(),
-            "largest_thumb": self.largest_thumb.get_link(),
-        }
+        return self.context
+
+    def get_hash(self) -> Optional[str]:
+        stat = os.stat(self.path)
+        keys = f"{stat.st_mtime}, {stat.st_ctime}, {stat.st_size}"
+        h = hashlib.new('sha256')
+        h.update(keys.encode())
+        return h.hexdigest()
+
+        # with open(self.path, "rb") as f:
+        #     return hashlib.file_digest(f, "sha256").hexdigest()
+
+    def rebuild(self):
+        data = self.app.context_db.get_key(
+            str(self.path),
+            self.get_hash()
+        )
+        if data:
+            self.refreshed = False
+            self.context = data
+            self.date = datetime.fromisoformat(data['date'])
+        else:
+            self.refreshed = True
+            self.context = self.build_context()
+            self.app.context_db.set_key(
+                str(self.path),
+                self.get_hash(),
+                self.context
+            )

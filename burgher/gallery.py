@@ -64,7 +64,7 @@ class Gallery(MarkdownNode):
 
     def grow(self):
         for gal in [f for f in os.scandir(self.photo_dir) if f.is_dir()]:
-            album = Album(name=gal.name, path=gal.path, parent=self)
+            album = Album(name=gal.name, path=gal.path, parent=self, app=self.app)
             info_file = Path(gal) / "info.md"
             if info_file.exists():
                 album.description = markdown2.markdown_path(info_file)
@@ -86,11 +86,11 @@ class Gallery(MarkdownNode):
             for pic in album.get_all_pictures():
                 pic_data = pic.get_json()
                 all_pics.append(pic_data)
-                models.add(pic_data["tags"].get("model", ""))
-                lens.add(pic_data["tags"].get("lens", ""))
+                models.add(pic_data.get("model", ""))
+                lens.add(pic_data.get("lens", ""))
 
-        # models.remove(None)
-        # lens.remove(None)
+        models.remove(None)
+        lens.remove(None)
 
         data = {
             "pics": all_pics,

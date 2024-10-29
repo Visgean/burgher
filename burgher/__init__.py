@@ -1,4 +1,5 @@
-from .node import Node, App
+from .node import Node
+from .app import App, GalleryApp
 from .template_nodes import (
     TemplateNode,
     FileTemplateNode,

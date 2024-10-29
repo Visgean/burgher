@@ -1,10 +1,9 @@
 import os
-from pathlib import Path
+from typing import Optional
 from urllib.parse import quote
 
 from slugify import slugify
 from progress.bar import Bar
-
 
 DEFAULT_CONFIG = {"template_dir": "templates"}
 
@@ -15,11 +14,14 @@ class Node:
     show_progress = False
     indexable = True
     rewrite_html_links = True  # /page.html -> /page
+    app: "app"
 
-    def __init__(self, parent=None, **config):
+    def __init__(self, parent=None, app=None, **config):
         self.children = {}
         self.parent = parent
         self.config = config
+        self.cache_data = False
+        self.app = app
 
     def get_config(self, key, default=None):
         if key in self.config:
@@ -94,6 +96,8 @@ class Node:
         return self.get_root_node().get_output_folder()
 
     def get_root_node(self):
+        if self.app:
+            return self.app
         if self.parent:
             return self.parent.get_root_node()
         return self
@@ -110,91 +114,22 @@ class Node:
 
         [c.process_feed(feed) for c in self.children.values()]
 
+    def get_hash(self) -> Optional[str]:
+        return None
 
-class App(Node):
-    """
-    The app works in two steps: first it collects root nodes and let them register - grow leafs
-    and then it generates all leafs of the graph.
-    """
-
-    def __init__(self, output_path="build", feed=None, local_build=None, **config):
-        super().__init__()
-        self.feed = feed
-
-        default_config = DEFAULT_CONFIG.copy()
-        default_config.update(config)
-
-        self.config = default_config
-        self.output_folder = Path(output_path).resolve()
-
-        self.local_build = local_build
-
-    def get_output_folder(self):
-        return self.output_folder
-
-    def register(self, **nodes):
+    def rebuild(self) -> bool:
         """
-        The keyword arguments are used to as a namespace
+        Does this node need to be re-build or can be skipped based on cache
         """
-        for name, node_pack in nodes.items():
-            if isinstance(node_pack, list):
-                for node in node_pack:
-                    node.parent = self
-                    node.grow()
-                    self.children[f"{name}:{node.get_name()}"] = node
-            else:  # node pack is just one node
-                node_pack.parent = self
-                node_pack.grow()
-                self.children[name] = node_pack
+        return True
 
-    def generate(self):
-        super().generate()
+    def build_context(self):
+        return {}
 
-        if self.feed is not None:
-            self.process_feed(self.feed)
+    def get_context_cache(self):
+        pass
 
-        if self.local_build:
-            self.output_folder = Path(self.local_build).resolve()
-            self.config["domain"] = ""
-            self.config["local_build"] = True
-            super().generate()
-
-    def photo_cleanup(self, dry=True):
-        """
-        Clean up files that are present from previous builds
-        """
-
-        # List of all images we generated:
-        files_generated = {
-            child.get_output_path() for child in self.children_recursive()
-        }
-
-        # Find all images
-        existing_imgs = set()
-        exts = ["*.jpg", "*.jpeg", "*.png", "*.JPG", "*.JPEG", "*.PNG"]
-        for img_ext in exts:
-            existing_imgs.update(set(self.output_folder.rglob(img_ext)))
-
-        print(
-            "Found",
-            len(existing_imgs),
-            "images",
-            "generated",
-            len(files_generated),
-            "files",
-        )
-
-        to_delete = existing_imgs - files_generated
-        to_delete_count = len(to_delete)
-        if to_delete_count > 100:
-            print(f'would delete {to_delete_count} files, this is probably mistake!')
-        else:
-            for file_to_delete in existing_imgs - files_generated:
-                if "/static/" in str(file_to_delete):
-                    continue
-
-                if dry:
-                    print(f"Would delete", file_to_delete)
-                else:
-                    print(f"Deleting", file_to_delete)
-                    file_to_delete.unlink()
+    def get_context(self):
+        if self.rebuild():
+            return self.build_context()
+        return self.get_context_cache()
