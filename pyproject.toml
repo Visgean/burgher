@@ -1,0 +1,14 @@
+[project]
+name = "burgher"
+version = "2024.1"
+dependencies = []
+requires-python = ">=3.12"
+authors = [
+    {name = "Visgean", email = "visgean@gmail.com"},
+]
+description = "Burhger!"
+readme = "README.md"
+
+[tool.setuptools]
+packages = ["burgher"]
+py-modules = ["__init__"] # dash, not underscore
