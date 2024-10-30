@@ -93,7 +93,6 @@ class Picture(Node):
             return ", ".join(parts)
         return ""
 
-
     def get_date(self):
         return self.date
 
