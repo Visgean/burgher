@@ -72,6 +72,8 @@ class Gallery(MarkdownNode):
             self.children[gal.name] = album
         super().grow()
 
+    def skip_generation_paths(self):
+        return [self.source_file, self.photo_dir]
 
     def generate_json(self):
         all_pics = []
