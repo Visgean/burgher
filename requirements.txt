@@ -1,5 +1,4 @@
 Jinja2
-pillow
 ExifRead
 feedgen
 pytz
@@ -8,3 +7,4 @@ progress
 markdown2
 python-frontmatter
 python-slugify
+pillow==9.5.0
