@@ -1,8 +1,8 @@
 import email.utils
 from datetime import datetime
 
-from burgher import TemplateNode
-from burgher import Album
+from .template_nodes import TemplateNode
+from .album import Album
 
 
 class Feed(TemplateNode):
