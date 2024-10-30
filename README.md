@@ -75,21 +75,22 @@ from burgher import App
 
 # this is the list of directories that will trigger rebuild of all template nodes
 # if any file changes. 
-check_paths = [Path("../../Library/CloudStorage/Dropbox/gits/interwebs/visgean.me/templates/"),
-               Path("../../Library/CloudStorage/Dropbox/gits/interwebs/visgean.me/static/"),
-               Path("../../Library/CloudStorage/Dropbox/gits/interwebs/burgher")]
+check_paths = [
+    Path("templates/"),
+    Path("static/"),
+]
 
 out = Path("../build/")
 PHOTO_DIR = Path("/home/user/photos/public/")
 app = App(
-    name="tintinburgh",
-    template_dir="../../Library/CloudStorage/Dropbox/gits/interwebs/visgean.me/templates",
+    name="appname",
+    template_dir="/templates",
     output_path=out,
-    domain="http://tintinburgh.com",
+    domain="http://example.com",
     check_paths=check_paths,
     # context db is json file that persists between builds
     # it is used to cache metadata for photos and other content to improve build performance
-    context_db_path=Path("../tintinburgh.json"),
+    context_db_path=Path("../example.json"),
 )
 
 app.register(
@@ -101,7 +102,7 @@ app.register(
     # static files - these will be simply copied
     static=StaticFolderNode("static"),
     # register gallery, here we specify output file, so that the gallery is a root of the site
-    gallery=Gallery(PHOTO_DIR, 
+    gallery=Gallery(PHOTO_DIR,
                     output_file="index.html",
                     source_file="index.md"
                     ),
