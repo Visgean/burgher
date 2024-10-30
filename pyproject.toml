@@ -1,14 +1,43 @@
 [project]
 name = "burgher"
-version = "2024.1"
-dependencies = []
+version = "1.1"
+dependencies = [
+    "Jinja2",
+    "ExifRead",
+    "feedgen",
+    "pytz",
+    "wand",
+    "progress",
+    "markdown2",
+    "python-frontmatter",
+    "python-slugify",
+    "pillow==9.5.0",
+]
+
 requires-python = ">=3.12"
+
 authors = [
     {name = "Visgean", email = "visgean@gmail.com"},
 ]
-description = "Burhger!"
+
+description = "Burgher - a static site generator focused on galleries"
 readme = "README.md"
+
+[project.urls]
+Homepage = "https://github.com/Visgean/burgher"
+
+[build-system]
+requires = [
+    "setuptools>=60",
+    "setuptools-scm>=8.0"]
+
 
 [tool.setuptools]
 packages = ["burgher"]
 py-modules = ["__init__"] # dash, not underscore
+
+[packages.find]
+where = ["burgher"]
+
+[tool.setuptools.package-data]
+mypkg = ["*.html", "*.css"]
