@@ -50,9 +50,6 @@ Features:
 - Albums with `.hidden` empty file will not be indexed in the main page and will only be accessible with the main link
 
 
-
-
-
 ## How it works
 
 1. Point burgher at your photo directories
@@ -64,6 +61,14 @@ Features:
    - Maintains your folder hierarchy
 
 ## Basic Usage
+
+### Install 
+
+```
+    pip install burgher
+```
+
+### Create app.py:
 
 ```python
 from pathlib import Path
@@ -111,7 +116,12 @@ app.register(
 
 # generate the site
 app.generate()
+```
 
+and generate website via
+
+```
+    python app.py
 ```
 
 
