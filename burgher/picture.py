@@ -85,6 +85,7 @@ class Picture(Node):
                 self.get_focal_length(),
                 self.get_model(),
                 self.get_lens(),
+                self.get_year(),
             ],
         )
 
@@ -92,8 +93,14 @@ class Picture(Node):
             return ", ".join(parts)
         return ""
 
+
     def get_date(self):
         return self.date
+
+    def get_year(self):
+        if self.date.year < 2000:
+            return None
+        return str(self.date.year)
 
     def get_model(self):
         return self.context.get("model")
@@ -103,7 +110,8 @@ class Picture(Node):
 
     def get_iso(self):
         iso_raw = self.context.get("iso")
-        return f"ISO: {iso_raw}"
+        if iso_raw:
+            return f"ISO: {iso_raw}"
 
     def get_aperture(self):
         f = self.context.get("aperture")
