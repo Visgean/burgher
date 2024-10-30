@@ -70,7 +70,7 @@ class Picture(Node):
             x = int(size_x) if size_x != "" else None
             y = int(size_y) if size_y != "" else None
 
-            self.children[size] = Thumb(size=(x, y), parent=self)
+            self.children[size] = Thumb(size=(x, y), parent=self, app=self.app)
 
         super().grow()
 
