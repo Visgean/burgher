@@ -39,7 +39,12 @@ class TemplateNode(Node):
         }
 
     def generate(self):
+        skip = self.skip_generation()
         super().generate()
+
+        if skip:
+            return
+
         env = Environment(
             loader=FileSystemLoader(self.get_config("template_dir")),
             autoescape=select_autoescape(["html", "xml"]),
@@ -68,6 +73,9 @@ class FileTemplateNode(TemplateNode):
             for f in Path(path).iterdir()
             if path_not_ignored(f) and not f.is_dir()
         ]
+
+    def skip_generation_paths(self):
+        return [self.source_file]
 
     def get_name(self):
         name, ext = splitext(self.source_file.name)

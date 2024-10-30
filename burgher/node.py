@@ -2,8 +2,10 @@ import os
 from typing import Optional
 from urllib.parse import quote
 
-from slugify import slugify
 from progress.bar import Bar
+from slugify import slugify
+
+from .utils import recursive_max_stat
 
 DEFAULT_CONFIG = {"template_dir": "templates"}
 
@@ -68,6 +70,28 @@ class Node:
 
     def get_name(self):
         raise NotImplementedError
+
+    def skip_generation_paths(self):
+        return []
+
+    def skip_generation(self):
+        """
+        Override if this template has been safely assumed to be unchanged
+        """
+        paths = self.skip_generation_paths()
+        if not paths:
+            return False
+
+        app = self.get_root_node()
+        key = str(self.get_output_path())
+
+        most_mtime = recursive_max_stat(paths, app.static_hash)
+        unchanged = app.context_db.get_key(key, str(most_mtime))
+        if unchanged:
+            self.show_progress = False
+            return True
+
+        app.context_db.set_key(key, str(most_mtime), True)
 
     def generate(self):
         """

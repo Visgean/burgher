@@ -2,7 +2,7 @@ from pathlib import Path
 
 from .context_db import ContextDB
 from .node import DEFAULT_CONFIG, Node
-from .utils import user_prompt
+from .utils import recursive_max_stat, user_prompt
 
 
 class App(Node):
@@ -10,13 +10,26 @@ class App(Node):
     The app works in two steps: first it collects root nodes and let them register - grow leafs
     and then it generates all leafs of the graph.
     """
+
     context_db: ContextDB
 
-    def __init__(self, name, output_path="build", feed=None, local_build=None, **config):
+    def __init__(
+        self,
+        name,
+        context_db_path,
+        output_path="build",
+        feed=None,
+        local_build=None,
+        check_paths=None,
+        **config,
+    ):
         super().__init__()
         self.feed = feed
 
-        self.context_db = ContextDB(Path(output_path) / f'../build-{name}.json')
+        self.app_name = name
+        self.context_db = ContextDB(Path(context_db_path))
+
+        self.static_hash = recursive_max_stat(check_paths)
 
         default_config = DEFAULT_CONFIG.copy()
         default_config.update(config)
@@ -89,9 +102,7 @@ class GalleryApp(App):
         )
 
         to_delete = [
-            f
-            for f in existing_imgs - files_generated
-            if not "/static/" in str(f)
+            f for f in existing_imgs - files_generated if not "/static/" in str(f)
         ]
         to_delete_count = len(to_delete)
 
@@ -101,7 +112,9 @@ class GalleryApp(App):
         if needs_confirmation:
             for file_to_delete in to_delete:
                 print(f"Would delete", file_to_delete)
-            confirmed = user_prompt(f'Would delete {to_delete_count} files. Please confirm: ')
+            confirmed = user_prompt(
+                f"Would delete {to_delete_count} files. Please confirm: "
+            )
 
         if not needs_confirmation or (needs_confirmation and confirmed):
             for file_to_delete in to_delete:

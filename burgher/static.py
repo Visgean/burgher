@@ -19,14 +19,18 @@ class StaticFolderNode(Node):
     def get_name(self):
         return self.folder.name
 
+    def skip_generation_paths(self):
+        return [self.folder]
+
     def generate(self):
         """
         TODO: deal with shutil so that we don't have to delete the directory
         """
-        out = self.get_output_folder()
-        if out.exists():
-            shutil.rmtree(out)
-        shutil.copytree(self.folder, self.get_output_folder())
+        if not self.skip_generation():
+            out = self.get_output_folder()
+            if out.exists():
+                shutil.rmtree(out)
+            shutil.copytree(self.folder, self.get_output_folder())
         super().generate()
 
 
@@ -42,9 +46,13 @@ class StaticNode(Node):
     def get_name(self):
         return self.file.name
 
+    def skip_generation_paths(self):
+        return [self.file]
+
     def generate(self):
         """
         TODO: deal with shutil so that we don't have to delete the directory
         """
-        shutil.copy(self.file, self.get_output_folder())
+        if not self.skip_generation():
+            shutil.copy(self.file, self.get_output_folder())
         super().generate()

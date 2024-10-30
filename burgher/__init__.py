@@ -1,12 +1,12 @@
-from .node import Node
+from .album import Album
 from .app import App, GalleryApp
-from .template_nodes import (
-    TemplateNode,
-    FileTemplateNode,
-    MarkdownNode,
-    FrontMatterNode,
-)
-from .static import StaticFolderNode, StaticNode
 from .blog import BlogRoot
 from .gallery import Gallery
-from .album import Album
+from .node import Node
+from .static import StaticFolderNode, StaticNode
+from .template_nodes import (
+    FileTemplateNode,
+    FrontMatterNode,
+    MarkdownNode,
+    TemplateNode,
+)

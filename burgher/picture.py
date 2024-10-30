@@ -1,14 +1,16 @@
+import hashlib
+import os
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
-from datetime import datetime
-import exifread
-from PIL import Image as PILImage, ImageOps
-import os
-import hashlib
 
-from burgher import Node
-from .defaults import DEFAULT_DATE, THUMB_SIZES, EXIF_INTERESTING_TAGS
-from .utils import parse_exif_date, get_name, get_exif_tag_value
+import exifread
+from PIL import Image as PILImage
+from PIL import ImageOps
+
+from .defaults import DEFAULT_DATE, EXIF_INTERESTING_TAGS, THUMB_SIZES
+from .node import Node
+from .utils import get_exif_tag_value, get_name, parse_exif_date
 
 
 class Thumb(Node):
@@ -74,16 +76,17 @@ class Picture(Node):
 
     # noinspection PyTypeChecker
     def get_info(self):
-        parts = filter(None,
-           [
-               self.get_shutter(),
-               self.get_iso(),
-               self.get_aperture(),
-               self.get_focal_length(),
-               self.get_model(),
-               self.get_lens(),
-           ]
-       )
+        parts = filter(
+            None,
+            [
+                self.get_shutter(),
+                self.get_iso(),
+                self.get_aperture(),
+                self.get_focal_length(),
+                self.get_model(),
+                self.get_lens(),
+            ],
+        )
 
         if parts:
             return ", ".join(parts)
@@ -93,33 +96,33 @@ class Picture(Node):
         return self.date
 
     def get_model(self):
-        return self.context.get('model')
+        return self.context.get("model")
 
     def get_lens(self):
-        return self.context.get('lens')
+        return self.context.get("lens")
 
     def get_iso(self):
-        iso_raw = self.context.get('iso')
-        return f'ISO: {iso_raw}'
+        iso_raw = self.context.get("iso")
+        return f"ISO: {iso_raw}"
 
     def get_aperture(self):
-        f = self.context.get('aperture')
+        f = self.context.get("aperture")
         if f:
-            return f'f{f}'  # hahaha
+            return f"f{f}"  # hahaha
 
     def get_focal_length(self):
-        f = self.context.get('length')
+        f = self.context.get("length")
         if f:
-            return f'{f}mm'
+            return f"{f}mm"
 
     def get_shutter(self):
-        ss = self.context.get('shutter')
+        ss = self.context.get("shutter")
         if ss:
-            return f'{ss}s'
+            return f"{ss}s"
 
     def get_output_name(self):
-        if self.get_name() == 'main':
-            return self.get_hash() + '.jpg'
+        if self.get_name() == "main":
+            return self.get_hash() + ".jpg"
         return self.path.name
 
     def get_name(self):
@@ -140,15 +143,13 @@ class Picture(Node):
 
     @property
     def ratio(self) -> float:
-        return self.context['size_x'] / self.context['size_y']
+        return self.context["size_x"] / self.context["size_y"]
 
     # noinspection PyTypeChecker
     def generate(self):
         super().generate()
         # Imagemagick is slow as fuck so I try to avoid it.
-        thumbs_exists = all(
-            [c.exists() for c in self.children.values()]
-        )
+        thumbs_exists = all([c.exists() for c in self.children.values()])
 
         if not self.refreshed and thumbs_exists:
             return
@@ -183,23 +184,23 @@ class Picture(Node):
 
         self.date = date
 
-        model = tags_parsed.get('model')
-        lens = tags_parsed.get('lens')
-        iso = tags_parsed.get('iso')
-        aperture = tags_parsed.get('aperture')
-        length = tags_parsed.get('length')
-        shutter = tags_parsed.get('shutter')
+        model = tags_parsed.get("model")
+        lens = tags_parsed.get("lens")
+        iso = tags_parsed.get("iso")
+        aperture = tags_parsed.get("aperture")
+        length = tags_parsed.get("length")
+        shutter = tags_parsed.get("shutter")
 
         return {
-            'date': date.isoformat(),
-            'iso': iso,
-            'aperture': aperture,
-            'length': length,
-            'shutter': shutter,
-            'model': model,
-            'lens': lens,
-            'size_y': size_y,
-            'size_x': size_x,
+            "date": date.isoformat(),
+            "iso": iso,
+            "aperture": aperture,
+            "length": length,
+            "shutter": shutter,
+            "model": model,
+            "lens": lens,
+            "size_y": size_y,
+            "size_x": size_x,
         }
 
     def get_srcset(self):
@@ -223,7 +224,7 @@ class Picture(Node):
     def get_hash(self) -> Optional[str]:
         stat = os.stat(self.path)
         keys = f"{stat.st_mtime}, {stat.st_ctime}, {stat.st_size}"
-        h = hashlib.new('sha256')
+        h = hashlib.new("sha256")
         h.update(keys.encode())
         return h.hexdigest()
 
@@ -231,19 +232,12 @@ class Picture(Node):
         #     return hashlib.file_digest(f, "sha256").hexdigest()
 
     def rebuild(self):
-        data = self.app.context_db.get_key(
-            str(self.path),
-            self.get_hash()
-        )
+        data = self.app.context_db.get_key(str(self.path), self.get_hash())
         if data:
             self.refreshed = False
             self.context = data
-            self.date = datetime.fromisoformat(data['date'])
+            self.date = datetime.fromisoformat(data["date"])
         else:
             self.refreshed = True
             self.context = self.build_context()
-            self.app.context_db.set_key(
-                str(self.path),
-                self.get_hash(),
-                self.context
-            )
+            self.app.context_db.set_key(str(self.path), self.get_hash(), self.context)

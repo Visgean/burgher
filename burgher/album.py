@@ -1,14 +1,13 @@
 import email.utils
-import logging
 import os
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import markdown2
 
-from burgher import TemplateNode
-from .defaults import THUMB_SIZES, DEFAULT_DATE
+from .defaults import DEFAULT_DATE, THUMB_SIZES
 from .picture import Picture
+from .template_nodes import TemplateNode
 from .utils import get_name, is_pic
 
 
@@ -67,23 +66,13 @@ class Album(TemplateNode):
         candidates = []
 
         if not self.pictures and self.sub_albums:
-            candidates.extend(
-                [
-                    a.best_photo()
-                    for a in self.sub_albums.values()
-                ]
-            )
+            candidates.extend([a.best_photo() for a in self.sub_albums.values()])
         if not self.pictures and self.embedded:
-            candidates.extend(
-                [
-                    a.best_photo()
-                    for a in self.embedded.values()
-                ]
-            )
+            candidates.extend([a.best_photo() for a in self.embedded.values()])
 
         if candidates:
             for c in candidates:
-                if c.get_name() == 'main':
+                if c.get_name() == "main":
                     return c
 
             by_ratio = sorted(candidates, key=lambda p: good_ratio - p.ratio)
@@ -99,6 +88,9 @@ class Album(TemplateNode):
             raise AlbumError(f"Album {{ self.get_output_folder() }} might be empty!")
 
         return by_ratio[0]
+
+    def skip_generation_paths(self):
+        return [Path(self.path)]
 
     def get_latest_date(self):
         dates = [DEFAULT_DATE]
