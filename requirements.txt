@@ -7,4 +7,4 @@ progress
 markdown2
 python-frontmatter
 python-slugify
-pillow==9.5.0
+pillow==10.3.0
