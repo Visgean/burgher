@@ -1,4 +1,4 @@
-# burgher - a static site generator focused on galleries
+# Burgher - a static site generator focused on galleries
 
 Burgher is a static site generator that makes it easy to create photo galleries from your existing folder structure. Instead of requiring you to reorganize your photos or maintain a separate structure, burgher works with how you already organize your photos.
 
