@@ -5,7 +5,7 @@ from urllib.parse import quote
 from progress.bar import Bar
 from slugify import slugify
 
-from .utils import recursive_max_stat
+from .hash_utils import recursive_max_stat
 
 DEFAULT_CONFIG = {"template_dir": "templates"}
 
