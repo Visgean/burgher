@@ -223,10 +223,6 @@ This is the structure expected for the blog:
 ├── index.md
 └── posts
     ├── entry1.assets
-    │   ├── 2021-03-08 12.26.38.jpg
-    │   ├── 2023-03-08 12.26.55-1615207209608.jpg
-    │   ├── 2024-03-08 12.26.55.jpg
-    │   ├── 2021-03-08 12.27.28-1615207082001.jpg
     │   └── 2021-03-08 12.27.28.jpg
     ├── entry1.md
     └── xps-setup.md
