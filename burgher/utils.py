@@ -1,8 +1,6 @@
-import hashlib
 import os
 from datetime import datetime
 from fractions import Fraction
-from pathlib import Path
 
 from .defaults import PICTURE_EXTENSIONS
 
@@ -48,26 +46,3 @@ def get_exif_tag_value(value):
             return parsed_value
 
     return parsed_value
-
-
-def recursive_max_stat(paths: list[Path], initial_hash=""):
-    if not paths:
-        return ""
-
-    files = []
-    prev_hash = initial_hash
-
-    for p in paths:
-        if p.is_dir():
-            files.extend(list(p.rglob("**/*")))
-        else:
-            files.append(p)
-
-    for path in sorted(files):
-        stat = os.stat(path)
-        keys = f"{stat.st_mtime}, {stat.st_ctime}, {stat.st_size}, {prev_hash}"
-        h = hashlib.new("sha256")
-        h.update(keys.encode())
-        prev_hash = h.hexdigest()
-
-    return prev_hash
