@@ -97,6 +97,29 @@ class Gallery(MarkdownNode):
         #     "models": sorted(list(models)),
         #     "lens": sorted(list(lens)),
         # }
+    def generate_json(self):
+        all_pics = []
+        models = set()
+        lens = set()
 
-        # with open(self.get_output_folder() / "pictures.json", "w") as f:
-        #     f.write(json.dumps(data, indent=4))
+        for album in self.children.values():
+            if album.is_secret:
+                continue
+
+            for pic in album.get_all_pictures():
+                pic_data = pic.get_json()
+                all_pics.append(pic_data)
+                models.add(pic_data.get("model", ""))
+                lens.add(pic_data.get("lens", ""))
+
+        models.remove(None)
+        lens.remove(None)
+
+        data = {
+            "pics": all_pics,
+            "models": sorted(list(models)),
+            "lens": sorted(list(lens)),
+        }
+
+        with open(self.get_output_folder() / "pictures.json", "w") as f:
+            f.write(json.dumps(data, indent=4))

@@ -2,7 +2,8 @@ from pathlib import Path
 
 from .context_db import ContextDB
 from .node import DEFAULT_CONFIG, Node
-from .utils import recursive_max_stat, user_prompt
+from .utils import user_prompt
+from .hash_utils import recursive_max_stat
 
 
 class App(Node):

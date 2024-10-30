@@ -1,4 +1,4 @@
-from . import utils
+from burgher import utils
 from .template_nodes import FrontMatterNode
 
 
