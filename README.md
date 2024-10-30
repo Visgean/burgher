@@ -9,6 +9,50 @@ Key features:
 - Supports both single photos and gallery collections
 - Simple template-based customization
 
+
+
+# Example gallery 
+
+Let's look at example structure of the gallery files:
+
+```
+
+.
+├── Baltics
+│   ├── Helsinki
+│   │   ├── X-T5-2023-05-29 09.31.13.jpg
+│   │   ├── X-T5-2023-05-30 19.24.16.jpg
+│   │   ├── _Ruoholahti
+│   │   │   ├── X-T5-2023-05-30 11.12.54.jpg
+│   │   ├── _Suomenlinna
+│   │   │   ├── X-T5-2023-05-29 11.05.40.jpg
+│   │   │   └── X-T5-2023-05-29 11.54.06.jpg
+│   │   └── info.md
+│   ├── Lithuania
+│   │   ├── _Countryside
+│   │   │   ├── X-T5-2023-05-24 09.11.12.jpg
+│   │   │   └── X-T5-2023-05-24 14.49.27.jpg
+│   │   ├── _Druskininkai
+│   │   │   └── X-T5-2023-05-22 08.43.41.jpg
+│   │   ├── _Spit
+│   │   │   ├── main.jpg
+│   │   │   └── info.md
+│   │   └── _Vilnius
+│   │       └── main.jpg
+│   └── Riga
+└ ... 
+```
+
+Features:
+- `main.jpg` is used as a cover image for the album
+- `info.md` is used to provide description about the album
+- `_` prefixed folders are treated as embedded albums - they get rendered as part of the main album but they can have their own `info.md` and cover image and they also get link on their own.
+- Albums with `.hidden` empty file will not be indexed in the main page and will only be accessible with the main link
+
+
+
+
+
 ## How it works
 
 1. Point burgher at your photo directories
@@ -24,10 +68,9 @@ Key features:
 ```python
 from pathlib import Path
 
-import config
-from burgher.nodes import Feed
+from burgher.feed import Feed
 
-from burgher import FrontMatterNode, GalleryApp, StaticFolderNode
+from burgher import FrontMatterNode, StaticFolderNode, Gallery
 from burgher import App
 
 # this is the list of directories that will trigger rebuild of all template nodes
@@ -36,27 +79,33 @@ check_paths = [Path("../../Library/CloudStorage/Dropbox/gits/interwebs/visgean.m
                Path("../../Library/CloudStorage/Dropbox/gits/interwebs/visgean.me/static/"),
                Path("../../Library/CloudStorage/Dropbox/gits/interwebs/burgher")]
 
+out = Path("../build/")
+PHOTO_DIR = Path("/home/user/photos/public/")
 app = App(
     name="tintinburgh",
     template_dir="../../Library/CloudStorage/Dropbox/gits/interwebs/visgean.me/templates",
-    output_path=config.OUT_DIR,
+    output_path=out,
     domain="http://tintinburgh.com",
     check_paths=check_paths,
     # context db is json file that persists between builds
     # it is used to cache metadata for photos and other content to improve build performance
-    context_db_path=Path(config.OUT_DIR) / "../tintinburgh.json",
+    context_db_path=Path("../tintinburgh.json"),
 )
 
 app.register(
     # register directory with markdown files that will be rendered into html
-    pages=FrontMatterNode.from_folder("../../Library/CloudStorage/Dropbox/gits/interwebs/visgean.me/pages",
-                                      template_name="page.html"),
+    pages=FrontMatterNode.from_folder(
+        "pages",
+        template_name="page.html"
+    ),
     # static files - these will be simply copied
     static=StaticFolderNode("static"),
     # register gallery, here we specify output file, so that the gallery is a root of the site
-    gallery=Gallery(config.PHOTO_DIR, output_file="index.html",
-                    source_file="../../Library/CloudStorage/Dropbox/gits/interwebs/visgean.me/index.md"),
-    rss=Feed(root_gallery=config.PHOTO_DIR),
+    gallery=Gallery(PHOTO_DIR, 
+                    output_file="index.html",
+                    source_file="index.md"
+                    ),
+    rss=Feed(root_gallery=PHOTO_DIR),
 )
 
 # generate the site
@@ -77,6 +126,7 @@ app.generate()
 
 ### Content Nodes
 
+- `BlogRoot` - Creates blog structure with listing index and page notes
 - `TemplateNode` - Renders a Jinja2 template with context
 - `MarkdownNode` - Renders markdown content into HTML
 - `FrontMatterNode` - Markdown with YAML frontmatter for metadata
@@ -141,41 +191,56 @@ The context caching provides significant performance benefits:
 The context DB is stored as a JSON file that persists between builds. This allows incremental builds to be much faster than regenerating all metadata each time.
 
 
-# Gallery Node
+# Blog Root
 
-Lets look at example structure of the gallery files:
+For blogs there is a blog root node:
+
+```python
+from pathlib import Path
+
+from burgher import App, BlogRoot, StaticFolderNode
+
+blog_folder = Path('blog_entries')
+check_paths = [
+    Path("./templates/"),
+    Path("./static/"),
+]
+
+blog = App(...)  # as before 
+blog.register(
+    index=BlogRoot(source_file=blog_folder / "index.md", post_folder=blog_folder / "posts"),
+)
+
+blog.generate()
+```
+
+This is the structure expected for the blog: 
 
 ```
 
 .
-├── Baltics
-│   ├── Helsinki
-│   │   ├── X-T5-2023-05-29 09.31.13.jpg
-│   │   ├── X-T5-2023-05-30 19.24.16.jpg
-│   │   ├── _Ruoholahti
-│   │   │   ├── X-T5-2023-05-30 11.12.54.jpg
-│   │   ├── _Suomenlinna
-│   │   │   ├── X-T5-2023-05-29 11.05.40.jpg
-│   │   │   └── X-T5-2023-05-29 11.54.06.jpg
-│   │   └── info.md
-│   ├── Lithuania
-│   │   ├── _Countryside
-│   │   │   ├── X-T5-2023-05-24 09.11.12.jpg
-│   │   │   └── X-T5-2023-05-24 14.49.27.jpg
-│   │   ├── _Druskininkai
-│   │   │   └── X-T5-2023-05-22 08.43.41.jpg
-│   │   ├── _Spit
-│   │   │   ├── main.jpg
-│   │   │   └── info.md
-│   │   └── _Vilnius
-│   │       └── main.jpg
-│   └── Riga
-└ ... 
+├── index.md
+└── posts
+    ├── entry1.assets
+    │   ├── 2021-03-08 12.26.38.jpg
+    │   ├── 2023-03-08 12.26.55-1615207209608.jpg
+    │   ├── 2024-03-08 12.26.55.jpg
+    │   ├── 2021-03-08 12.27.28-1615207082001.jpg
+    │   └── 2021-03-08 12.27.28.jpg
+    ├── entry1.md
+    └── xps-setup.md
 ```
 
-Features: 
-- `main.jpg` is used as a cover image for the album
-- `info.md` is used to provide description about the album
-- `_` prefixed folders are treated as embedded albums - they get rendered as part of the main album but they can have their own `info.md` and cover image and they also get link on their own. 
-- Albums with ".hideen" empty file will not be indexed in the main page and will only be acessible with the main link
+The index has special markdown attributes: 
 
+```markdown
+---
+title:  "Blog title"
+title_post: "Blog"
+go_back_title: "blog"
+---
+
+# Blog
+
+Some info about the blog
+```
