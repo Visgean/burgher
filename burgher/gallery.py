@@ -72,31 +72,7 @@ class Gallery(MarkdownNode):
             self.children[gal.name] = album
         super().grow()
 
-    def generate(self):
-        super().generate()
-        #
-        # all_pics = []
-        # models = set()
-        # lens = set()
-        #
-        # for album in self.children.values():
-        #     if album.is_secret:
-        #         continue
-        #
-        #     for pic in album.get_all_pictures():
-        #         pic_data = pic.get_json()
-        #         all_pics.append(pic_data)
-        #         models.add(pic_data.get("model", ""))
-        #         lens.add(pic_data.get("lens", ""))
-        #
-        # models.remove(None)
-        # lens.remove(None)
-        #
-        # data = {
-        #     "pics": all_pics,
-        #     "models": sorted(list(models)),
-        #     "lens": sorted(list(lens)),
-        # }
+
     def generate_json(self):
         all_pics = []
         models = set()
