@@ -215,31 +215,21 @@ class Picture(Node):
             [f"{t.get_link()} {t.get_width()}w" for t in self.children.values()]
         )
 
-    def parse_interesting_tags(self, tags):
-        interesting_tags = {}
-        parsed = {}
-        for tag, name in EXIF_INTERESTING_TAGS.items():
-            if tag in tags:
-                value = tags[tag]
-                interesting_tags[name] = value.printable
-                parsed[name] = get_exif_tag_value(value)
-        return interesting_tags, parsed
-
     def get_json(self):
         return self.context
 
-    def get_hash(self) -> Optional[str]:
+    def get_mtime(self) -> Optional[str]:
         stat = os.stat(self.path)
-        keys = f"{stat.st_mtime}, {stat.st_ctime}, {stat.st_size}"
+        return str(int(stat.st_mtime))
+
+    def get_hash(self) -> Optional[str]:
         h = hashlib.new("sha256")
-        h.update(keys.encode())
+        h.update(self.get_mtime().encode())
         return h.hexdigest()
 
-        # with open(self.path, "rb") as f:
-        #     return hashlib.file_digest(f, "sha256").hexdigest()
-
     def rebuild(self):
-        data = self.app.context_db.get_key(str(self.path), self.get_hash())
+        file_hash = self.get_mtime()
+        data = self.app.context_db.get_key(str(self.path), file_hash)
         if data:
             self.refreshed = False
             self.context = data
@@ -247,4 +237,4 @@ class Picture(Node):
         else:
             self.refreshed = True
             self.context = self.build_context()
-            self.app.context_db.set_key(str(self.path), self.get_hash(), self.context)
+            self.app.context_db.set_key(str(self.path), file_hash, self.context)
