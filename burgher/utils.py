@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 from fractions import Fraction
 
-from .defaults import PICTURE_EXTENSIONS
+from .defaults import PICTURE_EXTENSIONS, EXIF_INTERESTING_TAGS
 
 
 def user_prompt(question: str) -> bool:
@@ -46,3 +46,14 @@ def get_exif_tag_value(value):
             return parsed_value
 
     return parsed_value
+
+
+def parse_interesting_tags(tags):
+    interesting_tags = {}
+    parsed = {}
+    for tag, name in EXIF_INTERESTING_TAGS.items():
+        if tag in tags:
+            value = tags[tag]
+            interesting_tags[name] = value.printable
+            parsed[name] = get_exif_tag_value(value)
+    return interesting_tags, parsed

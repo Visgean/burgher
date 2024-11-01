@@ -8,9 +8,9 @@ import exifread
 from PIL import Image as PILImage
 from PIL import ImageOps
 
-from .defaults import DEFAULT_DATE, EXIF_INTERESTING_TAGS, THUMB_SIZES
+from .defaults import DEFAULT_DATE, THUMB_SIZES
 from .node import Node
-from .utils import get_exif_tag_value, get_name, parse_exif_date
+from .utils import get_name, parse_exif_date, parse_interesting_tags
 
 
 class Thumb(Node):
@@ -170,7 +170,7 @@ class Picture(Node):
             tags = exifread.process_file(f, details=False)
             orientation = tags.get("Image Orientation")
 
-        interesting_tags, tags_parsed = self.parse_interesting_tags(tags)
+        interesting_tags, tags_parsed = parse_interesting_tags(tags)
         im = PILImage.open(self.path)
         # handle rotated images:
         if orientation and (6 in orientation.values or 8 in orientation.values):
