@@ -35,7 +35,7 @@ def recursive_max_stat(paths: list[Path], initial_hash=""):
             continue
 
         stat = os.stat(path)
-        keys = f"{stat.st_mtime}, {stat.st_ctime}, {stat.st_size}, {prev_hash}"
+        keys = str(int(stat.st_mtime)) + prev_hash
         h = hashlib.new("sha256")
         h.update(keys.encode())
         prev_hash = h.hexdigest()
