@@ -25,6 +25,9 @@ class Node:
         self.cache_data = False
         self.app = app
 
+    def __str__(self):
+        return self.get_name()
+
     def get_config(self, key, default=None):
         if key in self.config:
             return self.config[key]
@@ -149,11 +152,3 @@ class Node:
 
     def build_context(self):
         return {}
-
-    def get_context_cache(self):
-        pass
-
-    def get_context(self):
-        if self.rebuild():
-            return self.build_context()
-        return self.get_context_cache()
