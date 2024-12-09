@@ -23,7 +23,7 @@ class Feed(TemplateNode):
             [
                 a
                 for a in self.parent.children_recursive()
-                if isinstance(a, Album) and a.pictures
+                if isinstance(a, Album) and a.pictures and not a.is_secret
             ],
             key=Album.get_latest_date,
             reverse=True,
