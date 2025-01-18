@@ -49,9 +49,12 @@ class Gallery(MarkdownNode):
         )[:9]
 
         albums_per_year = defaultdict(list)
+        albums_top_level = []
         for album in albums_sorted:
             if album.is_secret or album in latest_sub_albums or album.is_embedded:
                 continue
+
+            albums_top_level.append(album)
 
             date = album.get_latest_date().strftime("%B, %Y")
             albums_per_year[date].append(album)
@@ -60,6 +63,7 @@ class Gallery(MarkdownNode):
         c["today"] = datetime.today()
         c["albums_sorted"] = albums_sorted
         c["albums_per_year"] = albums_per_year
+        c["albums_top_level"] = albums_top_level
         return c
 
     def grow(self):
