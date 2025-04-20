@@ -6,6 +6,7 @@ from pathlib import Path
 
 import markdown2
 
+from .activity_pub import write_activity_pub
 from .album import Album
 from .template_nodes import MarkdownNode
 
@@ -18,11 +19,11 @@ class Gallery(MarkdownNode):
     template_node_name = "gallery"
 
     def __init__(
-        self,
-        photo_dir,
-        template_name="gallery.html",
-        output_file="gallery.html",
-        **kwargs,
+            self,
+            photo_dir,
+            template_name="gallery.html",
+            output_file="gallery.html",
+            **kwargs,
     ):
         super().__init__(template_name=template_name, **kwargs)
         self.output_file = output_file
@@ -78,6 +79,36 @@ class Gallery(MarkdownNode):
 
     def skip_generation_paths(self):
         return [self.source_file, self.photo_dir]
+
+    def generate(self):
+        super().generate()
+        self.generate_activity_pub()
+        # self.generate_json()
+
+    def generate_activity_pub(self):
+
+
+        all_albums = sorted(
+            [
+                a
+                for a in self.children_recursive()
+                if isinstance(a, Album) and not a.is_secret and len(a.pictures) > 0
+            ],
+            key=Album.get_latest_date,
+            reverse=True,
+        )
+
+
+        write_activity_pub(
+            output_folder=self.get_output_folder(),
+            full_url="https://tintinburgh.com",
+            albums=all_albums,
+            username='tintinburgh',
+            domain='tintinburgh.com'
+        )
+
+
+
 
     def generate_json(self):
         all_pics = []

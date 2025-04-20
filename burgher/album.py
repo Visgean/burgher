@@ -1,4 +1,5 @@
 import email.utils
+import json
 import os
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -155,6 +156,10 @@ class Album(TemplateNode):
         self.children.update(self.embedded)
         super().grow()
 
+    def generate(self):
+        super().generate()
+        self.generate_activity_pub()
+
     def get_all_pictures(self):
         pics = list(self.pictures.values())
         for c in self.sub_albums.values():
@@ -162,6 +167,34 @@ class Album(TemplateNode):
         for c in self.embedded.values():
             pics.extend(c.get_all_pictures())
         return pics
+
+    def get_activity_pub_file(self):
+        return self.get_output_folder() / 'info.json'
+
+    def get_activity_pub_url(self):
+        return self.get_absolute_link() +  '/info'
+
+    def generate_activity_pub(self):
+        data = {
+            "@context": "https://www.w3.org/ns/activitystreams",
+            "id": self.get_activity_pub_url(),
+            "type": "Note",
+            "published": self.get_latest_date().isoformat(),
+            "attributedTo": "https://tintinburgh.com/users/tintinburgh",
+            "content": self.get_name(),
+            "attachment": [
+                {
+                    "type": "Image",
+                    "url": image.largest_thumb.get_absolute_link(),
+                    "name": image.get_info()
+                }
+                for image in self.pictures.values()
+            ],
+            "to": ["https://www.w3.org/ns/activitystreams#Public"]
+        }
+        with open(self.get_activity_pub_file(), 'w') as f :
+            f.write(json.dumps(data))
+
 
     def process_feed(self, feed: list):
         latest_date = self.get_latest_date()

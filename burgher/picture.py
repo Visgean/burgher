@@ -158,7 +158,8 @@ class Picture(Node):
         # Imagemagick is slow as fuck so I try to avoid it.
         thumbs_exists = all([c.exists() for c in self.children.values()])
 
-        if not self.refreshed and thumbs_exists:
+        # if not self.refreshed and thumbs_exists:
+        if thumbs_exists:
             return
 
         for thumb in self.children.values():
