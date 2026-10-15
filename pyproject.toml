@@ -10,6 +10,7 @@ dependencies = [
     "progress",
     "markdown2",
     "python-frontmatter",
+    "PyYAML",
     "python-slugify",
     "pillow==9.5.0",
 ]

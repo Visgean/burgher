@@ -53,6 +53,8 @@ class Picture(Node):
     tags_parsed = {}
 
     date = None
+    # Plain-text caption from the album's album.yaml, set by Album.grow().
+    description = None
 
     def __init__(self, path, thumb_sizes=THUMB_SIZES, **kwargs):
         super().__init__(**kwargs)
@@ -92,6 +94,16 @@ class Picture(Node):
         if parts:
             return ", ".join(parts)
         return ""
+
+    def get_caption(self):
+        """
+        Lightbox title / alt text: the description (album.yaml) followed by
+        the EXIF summary, or just the summary when there is no description.
+        """
+        info = self.get_info()
+        if self.description and info:
+            return f"{self.description} | {info}"
+        return self.description or info
 
     def get_date(self):
         return self.date

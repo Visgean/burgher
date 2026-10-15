@@ -6,6 +6,7 @@ from pathlib import Path
 
 import markdown2
 
+from .album_meta import apply_order, load_album_meta
 from .defaults import DEFAULT_DATE, THUMB_SIZES
 from .picture import Picture
 from .template_nodes import TemplateNode
@@ -43,7 +44,9 @@ class Album(TemplateNode):
         if self.is_embedded:
             self.name = name[1:]
 
-        self.is_secret = (Path(path) / ".secret").exists()
+        # Optional album.yaml: explicit ordering, cover, per-photo descriptions.
+        self.meta = load_album_meta(Path(path))
+        self.is_secret = (Path(path) / ".secret").exists() or self.meta.secret
 
     def get_output_folder(self):
         return super().get_output_folder() / self.get_output_name()
@@ -79,6 +82,11 @@ class Album(TemplateNode):
             by_ratio = sorted(candidates, key=lambda p: good_ratio - p.ratio)
             return by_ratio[0]
 
+        if self.meta.cover:
+            for p in self.pictures.values():
+                if p.path.name == self.meta.cover:
+                    return p
+
         if "main" in self.pictures:
             return self.pictures["main"]
 
@@ -110,25 +118,26 @@ class Album(TemplateNode):
         )
         difference: timedelta = ascending[-1].get_date() - ascending[0].get_date()
 
-        if difference.days > 10:
-            return reversed(ascending)
-        return ascending
+        by_date = list(reversed(ascending)) if difference.days > 10 else ascending
+        return apply_order(by_date, self.meta.photo_order, key=lambda p: p.path.name)
 
     def get_sub_albums_sorted(self):
         if not self.sub_albums:
             return []
 
-        return list(
-            sorted(self.sub_albums.values(), key=Album.get_latest_date, reverse=True)
-        )
+        by_date = sorted(self.sub_albums.values(), key=Album.get_latest_date, reverse=True)
+        return apply_order(by_date, self.meta.subalbum_order, key=Album.get_dir_name)
 
     def get_embedded_sorted(self):
         if not self.embedded:
             return []
 
-        return list(
-            sorted(self.embedded.values(), key=Album.get_latest_date, reverse=False)
-        )
+        by_date = sorted(self.embedded.values(), key=Album.get_latest_date, reverse=False)
+        return apply_order(by_date, self.meta.embedded_order, key=Album.get_dir_name)
+
+    def get_dir_name(self):
+        """Folder name on disk, including the "_" of embedded albums."""
+        return Path(self.path).name
 
     def grow(self):
         # find all picture extensions
@@ -139,6 +148,8 @@ class Album(TemplateNode):
                 if is_pic(p.path)
             }
         )
+        for pic in self.pictures.values():
+            pic.description = self.meta.description(pic.path.name)
 
         for gal in [f for f in os.scandir(self.path) if f.is_dir()]:
             album = Album(name=gal.name, path=gal.path, parent=self, app=self.app)
@@ -220,3 +231,66 @@ class Album(TemplateNode):
         embedded_children = any([k.startswith("_") for k in self.children.keys()])
 
         return (self.pictures or embedded_children) and not self.is_embedded
+
+    # ------------------------------------------------------------------
+    # Previous / next navigation.
+    #
+    # Albums are walked depth-first in the same order they are displayed:
+    # an album, then its sub albums (newest first), then the next sibling.
+    # "next" therefore descends into the first sub album when there is one,
+    # and "previous" is the exact inverse, so the two links always mirror
+    # each other. Secret and embedded albums are skipped.
+    # ------------------------------------------------------------------
+
+    def get_nav_children(self):
+        return [a for a in self.get_sub_albums_sorted() if not a.is_secret]
+
+    def get_nav_siblings(self):
+        parent = self.parent
+        if isinstance(parent, Album):
+            return parent.get_nav_children()
+        if hasattr(parent, "get_albums_sorted"):
+            return parent.get_albums_sorted()
+        return []
+
+    def get_last_descendant(self):
+        node = self
+        while True:
+            children = node.get_nav_children()
+            if not children:
+                return node
+            node = children[-1]
+
+    def get_next_album(self):
+        children = self.get_nav_children()
+        if children:
+            return children[0]
+
+        node = self
+        while isinstance(node, Album):
+            siblings = node.get_nav_siblings()
+            if node in siblings:
+                index = siblings.index(node)
+                if index + 1 < len(siblings):
+                    return siblings[index + 1]
+            node = node.parent
+        return None
+
+    def get_previous_album(self):
+        siblings = self.get_nav_siblings()
+        if self in siblings:
+            index = siblings.index(self)
+            if index > 0:
+                return siblings[index - 1].get_last_descendant()
+
+        if isinstance(self.parent, Album):
+            return self.parent
+        return None
+
+    def get_path_name(self):
+        """
+        Name including parents, e.g. "Portugal / 2019 / Porto".
+        """
+        parts = [p.get_name() for p in self.parents_reversed()]
+        parts.append(self.get_name())
+        return " / ".join(parts)

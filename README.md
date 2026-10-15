@@ -47,7 +47,30 @@ Features:
 - `main.jpg` is used as a cover image for the album
 - `info.md` is used to provide description about the album
 - `_` prefixed folders are treated as embedded albums - they get rendered as part of the main album but they can have their own `info.md` and cover image and they also get link on their own.
-- Albums with `.hidden` empty file will not be indexed in the main page and will only be accessible with the main link
+- Albums with `.secret` empty file will not be indexed in the main page and will only be accessible with the main link
+- `album.yaml` (optional) overrides the date based ordering and adds captions:
+
+```yaml
+secret: true                     # same as a .secret file
+cover: DSCF1234.jpg              # album thumbnail, beats main.*
+photo_order: [b.jpg, a.jpg]      # unlisted photos follow in date order
+subalbum_order: [Porto, Lisboa]  # dir names, unlisted follow newest first
+embedded_order: [_Under, _WU]    # dir names as on disk, unlisted follow oldest first
+photos:
+  a.jpg:
+    description: Ribeira at dusk.   # Picture.description / get_caption() in templates
+```
+
+  Loaded by `album_meta.load_album_meta()` in `Album.__init__`; every key is optional, unknown
+  keys are ignored, entries naming files that no longer exist are skipped, and a malformed
+  file raises `AlbumMetaError` with the file path (the build fails loudly). In templates:
+  `picture.description` (or `None`), `picture.get_caption()` (description and EXIF summary,
+  `"description | exif"`), `album.get_pictures_sorted()` / `get_sub_albums_sorted()` /
+  `get_embedded_sorted()` already apply the explicit orders.
+- Prev/next navigation: `Album.get_next_album()` / `get_previous_album()` walk the tree
+  depth-first in display order (album, its sub-albums newest first, next sibling, parent's
+  next sibling); top-level order comes from `Gallery.get_albums_sorted()`. Embedded and
+  secret albums are skipped.
 
 
 ## How it works
@@ -155,6 +178,7 @@ and generate website via
 ### Special Purpose Nodes
 
 - `Feed` - Generates RSS/Atom feeds
+- `SiteMap` - `sitemap.xml` from a template, listing every public album with pictures
 - `Stats` - Generates statistics pages
 
 Each node type can be configured with various options and composed together to build complex static sites. Nodes can have parent-child relationships and share context data.

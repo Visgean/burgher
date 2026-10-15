@@ -31,6 +31,18 @@ class Gallery(MarkdownNode):
     def get_output_name(self):
         return self.output_file
 
+    def get_albums_sorted(self):
+        """
+        Public top-level albums, newest first. Used for prev/next navigation.
+        """
+        return [
+            a
+            for a in sorted(
+                self.children.values(), key=Album.get_latest_date, reverse=True
+            )
+            if not a.is_secret and not a.is_embedded
+        ]
+
     def get_extra_context(self) -> dict:
         c = super().get_extra_context()
         albums_sorted = sorted(
