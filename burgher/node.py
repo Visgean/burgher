@@ -141,12 +141,6 @@ class Node:
         """
         [c.grow() for c in self.children.values()]
 
-    def process_feed(self, feed):
-        if not self.indexable:
-            return
-
-        [c.process_feed(feed) for c in self.children.values()]
-
     def get_hash(self) -> Optional[str]:
         return None
 

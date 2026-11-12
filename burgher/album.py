@@ -1,4 +1,3 @@
-import email.utils
 import json
 import os
 from datetime import datetime, timedelta
@@ -191,23 +190,17 @@ class Album(TemplateNode):
             pics.extend(c.get_all_pictures())
         return pics
 
-    def process_feed(self, feed: list):
-        latest_date = self.get_latest_date()
-
-        if datetime.now() - latest_date > timedelta(days=30):
-            return
-
-        feed.append(
-            {
-                "title": self.name,
-                "link": self.get_absolute_link(),
-                "date": email.utils.format_datetime(latest_date),
-                "description": f"New album - {self.name}",
-                "image": self.best_photo().largest_thumb.get_absolute_link(),
-            }
-        )
-
-        super().process_feed(feed)
+    def feed_photos(self, limit):
+        """
+        Photos for this album's RSS item: the cover first, then the album's own
+        photos in display order, then the embedded parts', capped at `limit`.
+        """
+        cover = self.best_photo()
+        photos = [cover]
+        photos.extend(p for p in self.get_pictures_sorted() if p is not cover)
+        for part in self.get_embedded_sorted():
+            photos.extend(p for p in part.get_pictures_sorted() if p is not cover)
+        return photos[:limit]
 
     def parents_reversed(self):
         """

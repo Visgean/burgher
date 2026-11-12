@@ -19,13 +19,11 @@ class App(Node):
         name,
         context_db_path,
         output_path="build",
-        feed=None,
         local_build=None,
         check_paths=None,
         **config,
     ):
         super().__init__()
-        self.feed = feed
 
         self.app_name = name
         self.context_db = ContextDB(Path(context_db_path))
@@ -63,9 +61,6 @@ class App(Node):
 
     def generate(self):
         super().generate()
-
-        if self.feed is not None:
-            self.process_feed(self.feed)
 
         if self.local_build:
             self.output_folder = Path(self.local_build).resolve()
