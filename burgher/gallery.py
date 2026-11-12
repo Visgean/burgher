@@ -8,6 +8,7 @@ import markdown2
 
 from .album import Album
 from .template_nodes import MarkdownNode
+from .utils import summarize
 
 
 class Gallery(MarkdownNode):
@@ -72,6 +73,7 @@ class Gallery(MarkdownNode):
             date = album.get_latest_date().strftime("%B, %Y")
             albums_per_year[date].append(album)
 
+        c["description"] = summarize(c["content"])
         c["latest_sub_albums"] = latest_sub_albums
         c["today"] = datetime.today()
         c["albums_sorted"] = albums_sorted

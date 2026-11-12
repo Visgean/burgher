@@ -1,4 +1,6 @@
+import html as html_module
 import os
+import re
 from datetime import datetime
 from fractions import Fraction
 
@@ -19,6 +21,22 @@ def user_prompt(question: str) -> bool:
 
 def parse_exif_date(dt) -> datetime:
     return datetime.strptime(str(dt.values), "%Y:%m:%d %H:%M:%S")
+
+
+def summarize(html: str, limit: int = 160) -> str:
+    """
+    Plain-text summary of an HTML fragment for <meta name="description">:
+    tags stripped, whitespace collapsed, cut at a word boundary.
+    """
+    # Block ends become spaces, inline tags (links, emphasis) vanish without one.
+    text = re.sub(r"</(p|li|h\d|div|blockquote|tr)>|<br\s*/?>", " ", html or "")
+    text = re.sub(r"<[^>]+>", "", text)
+    text = html_module.unescape(text)
+    text = re.sub(r"\s+", " ", text).strip()
+    if len(text) <= limit:
+        return text
+    cut = text[:limit].rsplit(" ", 1)[0].rstrip(" ,;:.")
+    return cut + "\u2026"
 
 
 def get_name(filename):

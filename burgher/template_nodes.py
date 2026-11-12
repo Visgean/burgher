@@ -8,6 +8,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from .node import Node
 from .static import StaticFolderNode
+from .utils import summarize
 
 
 def path_not_ignored(f: Path):
@@ -36,6 +37,9 @@ class TemplateNode(Node):
             self.template_node_name: self,
             "base_link": self.get_base_link_url(),
             "now": datetime.now(),
+            # SEO: <link rel="canonical"> / og:url, and the default meta description.
+            "canonical": self.get_absolute_link(),
+            "description": "",
         }
 
     def generate(self):
@@ -112,6 +116,7 @@ class FrontMatterNode(FileTemplateNode):
         c = super().get_extra_context()
         c["metadata"] = self.metadata
         c["html_content"] = self.html_content
+        c["description"] = self.metadata.get("description") or summarize(self.html_content)
         return c
 
     def grow(self):

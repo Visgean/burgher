@@ -9,7 +9,7 @@ from .album_meta import apply_order, load_album_meta
 from .defaults import DEFAULT_DATE, THUMB_SIZES
 from .picture import Picture
 from .template_nodes import TemplateNode
-from .utils import get_name, is_pic
+from .utils import get_name, is_pic, summarize
 
 
 class AlbumError(Exception):
@@ -58,6 +58,61 @@ class Album(TemplateNode):
 
     def get_name(self):
         return self.name
+
+    def get_title(self):
+        """
+        <title> / og:title without the site name: the album first, then its parents
+        innermost first, e.g. "Porto, 2019, Portugal" or "Jiriho z podebrad, Prague, Czechnya".
+        """
+        parents = list(self.parents_reversed())  # top level first
+        return ", ".join([self.get_name()] + [p.get_name() for p in reversed(parents)])
+
+    def is_hidden(self):
+        """Secret itself or inside a secret album."""
+        node = self
+        while isinstance(node, Album):
+            if node.is_secret:
+                return True
+            node = node.parent
+        return False
+
+    def get_seo_description(self):
+        """
+        <meta name="description">: the info.md text when there is one, otherwise a
+        sentence built from the photo count, the place and the dates.
+        """
+        if self.description:
+            return summarize(self.description)
+
+        pictures = self.get_all_pictures()
+        dates = [p.get_date() for p in pictures if p.get_date() and p.get_date().year > 2000]
+        when = ""
+        if dates:
+            lo, hi = min(dates), max(dates)
+            if (lo.year, lo.month) == (hi.year, hi.month):
+                when = lo.strftime("%B %Y")
+            else:
+                when = f"{lo.strftime('%B %Y')} to {hi.strftime('%B %Y')}"
+        n = len(pictures)
+        text = f"{n} photo{'s' if n != 1 else ''} from {self.get_title()}"
+        if when:
+            text += f", taken {when}"
+        return text + ". Part of Tintinburgh, Martin's travel photo gallery."
+
+    def get_breadcrumb_jsonld(self):
+        """schema.org BreadcrumbList for the album page."""
+        domain = self.get_config("domain", "")
+        trail = list(self.parents_reversed()) + [self]
+        items = [{"@type": "ListItem", "position": 1, "name": "Tintinburgh", "item": domain + "/"}]
+        for i, node in enumerate(trail, start=2):
+            items.append({"@type": "ListItem", "position": i, "name": node.get_name(),
+                          "item": node.get_absolute_link()})
+        return {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": items}
+
+    def get_extra_context(self) -> dict:
+        c = super().get_extra_context()
+        c["description"] = self.get_seo_description()
+        return c
 
     def get_long_name(self):
         if self.get_name().isnumeric():
