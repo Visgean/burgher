@@ -50,10 +50,16 @@ class Node:
             return str(self.get_output_path())
 
         relative_dir = self.get_output_path().relative_to(self.get_absolute_output())
+        base = self.get_base_link_url()
         if relative_dir.name == "index.html":
-            relative_dir = relative_dir.parent
+            # A directory index links to the folder *with* the trailing slash: that is
+            # the URL nginx serves directly. Without it every internal link costs a 301.
+            folder = relative_dir.parent
+            if str(folder) == ".":
+                return base
+            return quote(f"{base}{folder}/")
 
-        link = quote(f"{self.get_base_link_url()}{relative_dir}")
+        link = quote(f"{base}{relative_dir}")
 
         if self.rewrite_html_links and link.endswith(".html"):
             return link[:-5]
