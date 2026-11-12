@@ -24,6 +24,10 @@ from typing import Callable, Dict, Iterable, List, Optional, TypeVar
 import yaml
 
 META_FILENAME = "album.yaml"
+# Generated alt texts, one line per photo ({filename: text}). Kept apart from album.yaml
+# because tintinburgh-studio rewrites that file's `photos` block from its own form and
+# would drop any extra key. A hand-written description always wins over this.
+ALT_FILENAME = "alt.yaml"
 
 T = TypeVar("T")
 
@@ -50,6 +54,20 @@ class AlbumMeta:
             return None
         text = str(text).strip()
         return text or None
+
+
+def load_alt_texts(folder: Path) -> Dict[str, str]:
+    """alt.yaml in the album folder -> {filename: alt text}; {} when absent."""
+    path = folder / ALT_FILENAME
+    if not path.exists():
+        return {}
+    with open(path) as f:
+        data = yaml.safe_load(f) or {}
+    if not isinstance(data, dict) or not all(
+        isinstance(k, str) and isinstance(v, str) for k, v in data.items()
+    ):
+        raise AlbumMetaError(f"{path}: expected a mapping of filename to alt text")
+    return {k: v.strip() for k, v in data.items() if v.strip()}
 
 
 def _str_list(path: Path, key: str, value) -> List[str]:

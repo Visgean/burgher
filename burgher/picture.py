@@ -55,6 +55,8 @@ class Picture(Node):
     date = None
     # Plain-text caption from the album's album.yaml, set by Album.grow().
     description = None
+    # Generated alt text from the album's alt.yaml, set by Album.grow().
+    alt = None
 
     def __init__(self, path, thumb_sizes=THUMB_SIZES, **kwargs):
         super().__init__(**kwargs)
@@ -95,15 +97,38 @@ class Picture(Node):
             return ", ".join(parts)
         return ""
 
+    def get_text(self):
+        """
+        The caption shown to visitors: the hand-written description (album.yaml)
+        or, failing that, the generated line from alt.yaml. None when neither exists.
+        """
+        return self.description or self.alt
+
     def get_caption(self):
         """
-        Lightbox title / alt text: the description (album.yaml) followed by
-        the EXIF summary, or just the summary when there is no description.
+        Lightbox title and link tooltip: get_text() followed by the EXIF summary,
+        or just the summary when there is no text.
         """
-        info = self.get_info()
-        if self.description and info:
-            return f"{self.description} | {info}"
-        return self.description or info
+        text, info = self.get_text(), self.get_info()
+        if text and info:
+            return f"{text} | {info}"
+        return text or info
+
+    def get_alt(self):
+        """
+        alt text for <img>: the album.yaml description when there is one, else the
+        generated line from alt.yaml, else the place and month ("Porto, 2019,
+        Portugal, May 2019"). Camera settings (get_info) describe nothing a reader
+        or a search engine can use.
+        """
+        if self.description:
+            return self.description
+        if self.alt:
+            return self.alt
+        album = self.parent
+        place = album.get_title() if hasattr(album, "get_title") else ""
+        when = self.date.strftime("%B %Y") if self.date and self.date.year > 2000 else ""
+        return ", ".join(part for part in (place, when) if part)
 
     def get_date(self):
         return self.date

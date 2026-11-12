@@ -5,7 +5,7 @@ from pathlib import Path
 
 import markdown2
 
-from .album_meta import apply_order, load_album_meta
+from .album_meta import apply_order, load_album_meta, load_alt_texts
 from .defaults import DEFAULT_DATE, THUMB_SIZES
 from .picture import Picture
 from .template_nodes import TemplateNode
@@ -45,6 +45,7 @@ class Album(TemplateNode):
 
         # Optional album.yaml: explicit ordering, cover, per-photo descriptions.
         self.meta = load_album_meta(Path(path))
+        self.alt_texts = load_alt_texts(Path(path))
         self.is_secret = (Path(path) / ".secret").exists() or self.meta.secret
 
     def get_output_folder(self):
@@ -217,6 +218,7 @@ class Album(TemplateNode):
         )
         for pic in self.pictures.values():
             pic.description = self.meta.description(pic.path.name)
+            pic.alt = self.alt_texts.get(pic.path.name)
 
         for gal in [f for f in os.scandir(self.path) if f.is_dir()]:
             album = Album(name=gal.name, path=gal.path, parent=self, app=self.app)
