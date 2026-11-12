@@ -109,6 +109,19 @@ class Album(TemplateNode):
 
         return max(dates)
 
+    def get_own_latest_date(self):
+        """
+        Freshness of the album's own content: its pictures and embedded parts,
+        ignoring sub albums. Used to rank the "Latest" tiles on the index, so a
+        parent such as /Light Shows does not surface next to its new sub album
+        just because it holds a couple of loose photos.
+        """
+        dates = [DEFAULT_DATE]
+        dates.extend(filter(None, map(Picture.get_date, self.pictures.values())))
+        dates.extend(filter(None, map(Album.get_latest_date, self.embedded.values())))
+
+        return max(dates)
+
     def get_pictures_sorted(self):
         if not self.pictures:
             return []
@@ -216,13 +229,14 @@ class Album(TemplateNode):
 
     def show_in_fresh(self):
         """
-        Show in the 7 fresh albums
+        Candidate for the "Latest" tiles on the index.
 
-        the logic is a bit complicated:
         for example: /London/2024
         I want only 2024 to be displayed - not London.
         But for /Studio we have one album that only contains
         embedded - so we should display it.
+        Candidates are ranked by get_own_latest_date(), so a parent with loose
+        photos of its own only shows up when those photos are the new thing.
         """
 
         if self.is_secret:

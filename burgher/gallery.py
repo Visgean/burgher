@@ -49,14 +49,15 @@ class Gallery(MarkdownNode):
             self.children.values(), key=Album.get_latest_date, reverse=True
         )
 
-        # albums + sub albums
+        # albums + sub albums, ranked by their own photos (not their sub albums):
+        # a new /Light Shows/Signal 2026 must not drag /Light Shows in with it.
         latest_sub_albums = sorted(
             [
                 a
                 for a in self.children_recursive()
                 if isinstance(a, Album) and a.show_in_fresh()
             ],
-            key=Album.get_latest_date,
+            key=Album.get_own_latest_date,
             reverse=True,
         )[:9]
 
